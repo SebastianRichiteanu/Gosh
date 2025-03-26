@@ -9,15 +9,39 @@ import (
 	"github.com/SebastianRichiteanu/Gosh/internal/types"
 )
 
-// FindPath searches the system's PATH for a given command and returns its full file path if found
+// FindPath searches for the given command in the system's PATH, or checks if it's a local or full path
+// It returns the full file path if found or an empty string if not
 func FindPath(cmd string) string {
-	paths := strings.Split(os.Getenv(types.PathEnvVar), types.PathDelimiter)
-	for _, path := range paths {
-		fp := filepath.Join(path, cmd)
+	if len(cmd) == 0 {
+		return ""
+	}
+
+	switch cmd[0] {
+	case '.': // Local path, relative to curent dir
+		cmd = cmd[1:]
+		currentDir, err := os.Getwd()
+		if err != nil {
+			return "" // TODO: treat error? maybe once I add debug
+		}
+
+		fp := filepath.Join(currentDir, cmd)
 		if _, err := os.Stat(fp); err == nil {
 			return fp
 		}
+	case '/': // Absolute path
+		if _, err := os.Stat(cmd); err == nil {
+			return cmd
+		}
+	default: // Search in PATH
+		paths := strings.Split(os.Getenv(types.PathEnvVar), types.PathDelimiter)
+		for _, path := range paths {
+			fp := filepath.Join(path, cmd)
+			if _, err := os.Stat(fp); err == nil {
+				return fp
+			}
+		}
 	}
+
 	return ""
 }
 

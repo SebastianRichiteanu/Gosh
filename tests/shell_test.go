@@ -17,31 +17,162 @@ const (
 	goshTestBinaryPath = "./tmp/gosh"
 )
 
+type shellTest struct {
+	name    string
+	input   []string
+	want    []string
+	wantErr bool
+}
+
 func TestShell(t *testing.T) {
-	tests := []struct {
-		name    string
-		input   []string
-		want    []string
-		wantErr bool
-	}{
-		// TODO: I think it's best to move these somewhere else
+	// TODO: move to another function
+	pwdOutput, err := exec.Command("pwd").Output()
+	if err != nil {
+		t.Fatalf("Failed to execute pwd command to build tests: %v", err)
+	}
 
-		{name: "test invalid command", input: []string{"echo2 Hello, Gosh!"}, want: []string{"echo2: not found"}},
-		{name: "test echo", input: []string{"echo Hello, Gosh!"}, want: []string{"Hello, Gosh!"}},
-		{name: "test type builtin", input: []string{"type echo"}, want: []string{"echo is a shell builtin"}},
-		{name: "test type executable", input: []string{"type ls"}, want: []string{"ls is /usr/bin/ls"}},
-		{name: "test exit", input: []string{"exit"}, wantErr: true},
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		t.Fatalf("Failed to get the user home dir to build tests: %v", err)
+	}
 
-		{name: "test pwd", input: []string{"pwd"}, want: []string{"/mnt/d/Programming/Programming/GitHub/Gosh/tests"}}, // TODO: create  a main shell where these get executed and compare results :)
+	currentDir := strings.Trim(string(pwdOutput), "\r\n")
 
-		{name: "test cd", input: []string{"cd ..", "pwd"}, want: []string{"", "/mnt/d/Programming/Programming/GitHub/Gosh"}}, // TODO:: add more
-
-		{name: "test run program", input: []string{"ls ./tmp"}, want: []string{"gosh"}},
+	tests := []shellTest{
+		{
+			name:    "test invalid command",
+			input:   []string{"echo2 Hello, Gosh!"},
+			want:    []string{"echo2: not found"},
+			wantErr: false,
+		},
+		{
+			name:    "test echo",
+			input:   []string{"echo Hello, Gosh!"},
+			want:    []string{"Hello, Gosh!"},
+			wantErr: false,
+		},
+		{
+			name:    "test type builtin",
+			input:   []string{"type echo"},
+			want:    []string{"echo is a shell builtin"},
+			wantErr: false,
+		},
+		{
+			name:    "test type executable",
+			input:   []string{"type ls"},
+			want:    []string{"ls is /usr/bin/ls"},
+			wantErr: false,
+		},
+		{
+			name:    "test type not found",
+			input:   []string{"type ls2"},
+			want:    []string{"ls2: not found"},
+			wantErr: false,
+		},
+		{
+			name:    "test exit",
+			input:   []string{"exit"},
+			want:    []string{},
+			wantErr: true,
+		},
+		{
+			name:    "test pwd",
+			input:   []string{"pwd"},
+			want:    []string{currentDir},
+			wantErr: false,
+		},
+		{
+			name:    "test cd forward and backwords",
+			input:   []string{"cd ./tmp", "pwd", "cd ..", "pwd"},
+			want:    []string{"", currentDir + "/tmp", "", currentDir},
+			wantErr: false,
+		},
+		{
+			name:    "test cd random dir",
+			input:   []string{"cd /tmp", "pwd"},
+			want:    []string{"", "/tmp"},
+			wantErr: false,
+		},
+		{
+			name:    "test cd home dir",
+			input:   []string{"cd ~", "pwd"},
+			want:    []string{"", homeDir},
+			wantErr: false,
+		},
+		{
+			name:    "test run program - execute shell in shell",
+			input:   []string{"./tmp/gosh", "echo 123"},
+			want:    []string{"", "123"},
+			wantErr: false,
+		},
+		{
+			name:    "test single quotes",
+			input:   []string{"echo 'Hello,    Gosh!'"},
+			want:    []string{"Hello,    Gosh!"},
+			wantErr: false,
+		},
+		{
+			name:    "test double quotes",
+			input:   []string{`echo "Hello,  Gosh!"  "Hi"`},
+			want:    []string{"Hello,  Gosh! Hi"},
+			wantErr: false,
+		},
+		{
+			name:    "test double quotes",
+			input:   []string{`echo "Hello,  Go'sh!"  "Hi"`},
+			want:    []string{"Hello,  Go'sh! Hi"},
+			wantErr: false,
+		},
+		{
+			name:    "test backslash outside quotes",
+			input:   []string{`echo "Hello\  Gosh!"`},
+			want:    []string{`Hello\  Gosh!`},
+			wantErr: false,
+		},
+		{
+			name:    "test backslash outside quotes 2",
+			input:   []string{`echo Hello\ \ Gosh!`},
+			want:    []string{"Hello  Gosh!"},
+			wantErr: false,
+		},
+		{
+			name:    "test backslash within single quotes",
+			input:   []string{`echo 'Hello\ Gosh!'`},
+			want:    []string{`Hello\ Gosh!`},
+			wantErr: false,
+		},
+		{
+			name:    "test backslash within double quotes",
+			input:   []string{`echo "Hello\ 'Gosh'!"`},
+			want:    []string{`Hello\ 'Gosh'!`},
+			wantErr: false,
+		},
+		{
+			name:    "test backslash within double quotes 2",
+			input:   []string{`echo "Hello \"Gosh\"!"`},
+			want:    []string{`Hello "Gosh"!`},
+			wantErr: false,
+		},
+		{
+			name: "test executing a quoted executable",
+			input: []string{
+				`go build -o './tmp/name with "quotes"' ../cmd/gosh/main.go`, // build shell with quotes
+				`./tmp/'name with "quotes"'`,                                 // execute and enter shell
+				"pwd",                                                        // test new shell
+				"exit",                                                       // exit second shell, this shouldn't be an error because we fall back to the first shell
+			},
+			want:    []string{"", "", currentDir, ""},
+			wantErr: false,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+
+			if !test.wantErr {
+				assert.Equal(t, len(test.input), len(test.want), "the number of input cmds does not match with the number of outputs")
+			}
 
 			ptyMaster, err := initShell()
 			if err != nil {
@@ -61,7 +192,7 @@ func TestShell(t *testing.T) {
 				}
 
 				if !test.wantErr {
-					assert.Equal(t, got, test.want[idx], "test_name", test.name)
+					assert.Equal(t, test.want[idx], got, "output does not match")
 				}
 
 			}
