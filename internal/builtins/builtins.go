@@ -18,6 +18,8 @@ const (
 	BuiltinCd    = "cd"
 	BuiltinType  = "type"
 	BuiltinClear = "clear"
+
+	ClearControlSeq = "\033[H\033[2J"
 )
 
 var knownCmds types.CommandMap = make(types.CommandMap)
@@ -116,6 +118,6 @@ func builtinType() types.Command {
 // It clears the terminal screen.
 func builtinClear() types.Command {
 	return func() (string, error) {
-		return "\033[H\033[2J", nil
+		return ClearControlSeq, nil
 	}
 }

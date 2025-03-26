@@ -56,7 +56,7 @@ loop:
 		switch c {
 		case '\x03': // Ctrl+C
 			return builtins.BuiltinExit, false
-		case '\x0C': // Ctrl+L (ASCII 12)
+		case '\x0C': // Ctrl+L 
 			return builtins.BuiltinClear, false
 		case '\r', '\n': // Enter
 			fmt.Fprint(os.Stdout, "\r\n")
