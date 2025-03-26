@@ -25,7 +25,6 @@ type shellTest struct {
 }
 
 func TestShell(t *testing.T) {
-	// TODO: move to another function
 	pwdOutput, err := exec.Command("pwd").Output()
 	if err != nil {
 		t.Fatalf("Failed to execute pwd command to build tests: %v", err)
@@ -164,6 +163,32 @@ func TestShell(t *testing.T) {
 			want:    []string{"", "", currentDir, ""},
 			wantErr: false,
 		},
+		{
+			name:    "test stdout redirection",
+			input:   []string{"echo Hello, Gosh! > ./tmp/output.txt", "cat ./tmp/output.txt"},
+			want:    []string{"", "Hello, Gosh!"},
+			wantErr: false,
+		},
+		{
+			name:    "test stderr redirection",
+			input:   []string{"ls non_existing_file 2> ./tmp/error.txt", "cat ./tmp/error.txt"},
+			want:    []string{"", "ls: cannot access 'non_existing_file': No such file or directory"},
+			wantErr: false,
+		},
+		{
+			name:    "test append stdout",
+			input:   []string{"echo First Line > ./tmp/output2.txt", "echo Second Line >> ./tmp/output2.txt", "cat ./tmp/output2.txt"},
+			want:    []string{"", "", "First Line\r\nSecond Line"},
+			wantErr: false,
+		},
+		{
+			name:    "test append stderr",
+			input:   []string{"ls non_existing_file 2> ./tmp/error2.txt", "ls another_missing_file 2>> ./tmp/error2.txt", "cat ./tmp/error2.txt"},
+			want:    []string{"", "", "ls: cannot access 'non_existing_file': No such file or directory\r\nls: cannot access 'another_missing_file': No such file or directory"},
+			wantErr: false,
+		},
+
+		// TODO: create tests for autocompletion
 	}
 
 	for _, test := range tests {

@@ -1,7 +1,8 @@
 SHELL := /bin/bash
 
 BINARY = gosh
-BINARY_PATH = ./tests/tmp/$(BINARY)
+TEST_TMP_PATH = ./tests/tmp
+BINARY_PATH = $(TEST_TMP_PATH)/$(BINARY)
 SRC_PATH = ./cmd/gosh/main.go
 
 test: 
@@ -14,5 +15,5 @@ test:
 	@go test ./tests -v
 
 	@echo "🗑️  Cleaning up..."
-	@rm -rf $(BINARY_PATH)
+	@rm -rf $(TEST_TMP_PATH)
 	@echo "✅ Cleanup complete!"

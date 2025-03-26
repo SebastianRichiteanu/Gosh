@@ -39,7 +39,7 @@ Note: This section is for stages 2 and beyond.
 
 - autocomplete for dirs is broken? :( oh no
 - force "$ " (len > 2 :hm:)
-- makefile (binary, run, tests?, lint)
+
 - add debugger? + config??
 - todos
 - press up history
