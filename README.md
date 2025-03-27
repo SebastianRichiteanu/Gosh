@@ -37,6 +37,12 @@ Note: This section is for stages 2 and beyond.
 
 # TODO
 
+- autocomplete still broken for some stuff, really need to implement it better:
+   $ ls
+   test.sh
+   $ ./test.<TAB>
+   test..sh  test.s
+
 
 - force "$ " (len > 2 :hm:)
 
@@ -47,6 +53,5 @@ Note: This section is for stages 2 and beyond.
 - pipes
 - background exec 
 - alias?
-- history?
 - env vars?
 - readme

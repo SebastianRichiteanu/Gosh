@@ -21,23 +21,25 @@ var (
 )
 
 // Prompt prints the shell prompt, handles user input, and returns the parsed command and tokens
-func Prompt(knownCmds types.CommandMap, oldInput string) (types.Prompt, string, error) {
+func Prompt(knownCmds types.CommandMap, oldInput string, history []string) (types.Prompt, string, []string, error) {
 	fmt.Fprint(os.Stdout, "$ "+oldInput)
 
-	input, skipExec := readInput(oldInput, knownCmds)
+	input, history, skipExec := readInput(oldInput, history, knownCmds)
 	if skipExec {
-		return types.Prompt{}, input, nil
+		return types.Prompt{}, input, history, nil
 	}
 
-	return parseInput(strings.TrimSpace(input))
+	return parseInput(strings.TrimSpace(input), history)
 
 	// TODO: I don't really like that we pass the commands like args :(
 }
 
 // readInput handles reading the user input, processing special characters, and returning the final input string
-func readInput(oldInput string, knownCmds types.CommandMap) (string, bool) {
+func readInput(oldInput string, history []string, knownCmds types.CommandMap) (string, []string, bool) {
 	input := oldInput
 	pressedTab := false
+
+	historyIndex := len(history)
 
 	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
@@ -55,11 +57,14 @@ loop:
 		}
 		switch c {
 		case '\x03': // Ctrl+C
-			return builtins.BuiltinExit, false
+			return builtins.BuiltinExit, history, false
 		case '\x0C': // Ctrl+L
-			return builtins.BuiltinClear, false
+			return builtins.BuiltinClear, history, false
 		case '\r', '\n': // Enter
 			fmt.Fprint(os.Stdout, "\r\n")
+			if strings.TrimSpace(input) != "" {
+				history = append(history, input)
+			}
 			break loop
 		case '\x7F': // Backspace
 			if length := len(input); length > 0 {
@@ -83,7 +88,7 @@ loop:
 				}
 
 				// TODO: This entire implementation sucks, need to refactor
-				splitInputArr = strings.Split(splitInputArr[len(splitInputArr)-1], "/") 
+				splitInputArr = strings.Split(splitInputArr[len(splitInputArr)-1], "/")
 
 				splitInput = splitInputArr[len(splitInputArr)-1]
 				suffixAppender = "/" // TODO: only do this is the file is a dir....
@@ -121,18 +126,46 @@ loop:
 			fmt.Fprintf(os.Stdout, "\r\n%s\n\r", strings.Join(suffixesWithInput, "  "))
 			pressedTab = false
 
-			return input, true // return true so we don't exec
+			return input, history, true // return true so we don't exec
+		case '\x1B': // Escape sequences (arrow keys)
+			r2, _, _ := r.ReadRune()
+			r3, _, _ := r.ReadRune()
+
+			if r2 == '\x5B' { // Arrow key sequence
+				if r3 == '\x41' { // Up Arrow
+					if historyIndex > 0 {
+						historyIndex--
+						input = history[historyIndex]
+						fmt.Print("\r$ " + input) // Overwrite current input
+					} else if historyIndex == -1 && len(history) > 0 {
+						historyIndex = len(history) - 1
+						input = history[historyIndex]
+						fmt.Print("\r$ " + input)
+					}
+				} else if r3 == '\x42' { // Down Arrow
+					if historyIndex < len(history)-1 {
+						historyIndex++
+						input = history[historyIndex]
+						fmt.Print("\r$ " + input)
+					} else {
+						historyIndex = len(history)
+						input = ""
+						fmt.Print("\r$                                               ") // Clear input line
+						// TODO: the above is trivial implementation, need to do prompt handling better, maybe use tty directly
+					}
+				}
+			}
 
 		default:
 			input += string(c)
 			fmt.Fprint(os.Stdout, string(c))
 		}
 	}
-	return input, false
+	return input, history, false
 }
 
 // parseInput parses the user input, breaking it into tokens, handling quotes and escape characters, and detecting redirection
-func parseInput(input string) (types.Prompt, string, error) {
+func parseInput(input string, history []string) (types.Prompt, string, []string, error) {
 	parsedPrompt := types.Prompt{
 		StdStream: types.DefaultStdStream,
 		Truncate:  false,
@@ -203,7 +236,7 @@ func parseInput(input string) (types.Prompt, string, error) {
 
 			parsedPrompt.StdStream, err = utils.GetStdStream(input, i-1)
 			if err != nil {
-				return parsedPrompt, "", err
+				return parsedPrompt, "", history, err
 			}
 
 			if i < len(input)-1 && input[i+1] == '>' {
@@ -213,7 +246,7 @@ func parseInput(input string) (types.Prompt, string, error) {
 				parsedPrompt.Truncate = true
 			}
 
-			return parsedPrompt, "", nil
+			return parsedPrompt, "", history, nil
 		default:
 			currentToken.WriteByte(char)
 		}
@@ -224,11 +257,11 @@ func parseInput(input string) (types.Prompt, string, error) {
 	}
 
 	if inSingleQuote {
-		return parsedPrompt, "", errUnterminatedSingleQuote
+		return parsedPrompt, "", history, errUnterminatedSingleQuote
 	}
 	if inDoubleQuote {
-		return parsedPrompt, "", errUnterminatedDoubleQuote
+		return parsedPrompt, "", history, errUnterminatedDoubleQuote
 	}
 
-	return parsedPrompt, "", nil
+	return parsedPrompt, "", history, nil
 }

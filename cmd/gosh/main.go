@@ -9,10 +9,11 @@ import (
 func main() {
 	knownCmds := builtins.InitBuiltins()
 
-	var previousInput string
+	var previousInput string // TODO: scrap this and use history
+	var history []string
 
 	for {
-		prompt, newInput, err := prompt.Prompt(knownCmds, previousInput)
+		prompt, newInput, newHistory, err := prompt.Prompt(knownCmds, previousInput, history)
 		if err != nil {
 			panic(err)
 		}
@@ -23,6 +24,8 @@ func main() {
 		} else {
 			previousInput = ""
 		}
+
+		history = newHistory
 
 		executor.Exec(prompt, knownCmds)
 	}

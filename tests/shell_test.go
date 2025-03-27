@@ -189,6 +189,7 @@ func TestShell(t *testing.T) {
 		},
 
 		// TODO: create tests for autocompletion
+		// TODO: create tests for history (up/down arrow)
 	}
 
 	for _, test := range tests {
