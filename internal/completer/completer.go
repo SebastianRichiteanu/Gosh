@@ -2,6 +2,7 @@ package completer
 
 import (
 	"os"
+	"path"
 	"slices"
 	"strings"
 	"sync"
@@ -36,13 +37,20 @@ func FindLongestPrefix(cmds []string) string {
 
 // Autocomplete generates a list of possible completions for a given prefix
 // It combines suggestions from known built-in commands and executable files in the system's PATH
-func Autocomplete(knownCmds types.CommandMap, prefix string) []string {
-	var suffixes []string
-
+func Autocomplete(knownCmds types.CommandMap, prefix string) ([]string, bool) {
 	if prefix == "" {
-		return suffixes
+		return nil, false
 	}
 
+	if strings.Contains(prefix, " ") || strings.Contains(prefix, "./") || prefix[0] == '/' {
+		// If string has space in it probably is an arg of a command
+		// TODO: No autocomplete inside quotes
+		lastPartPrefix := strings.Split(prefix, " ")
+
+		return autoCompleteFilesAndDirs(lastPartPrefix[len(lastPartPrefix)-1]), true
+	}
+
+	var suffixes []string
 	suffixes = append(suffixes, autoCompleteKnownCmds(knownCmds, prefix)...)
 	suffixes = append(suffixes, autoCompleteExecutables(prefix)...)
 
@@ -58,7 +66,7 @@ func Autocomplete(knownCmds types.CommandMap, prefix string) []string {
 
 	slices.Sort(result)
 
-	return result
+	return result, false
 }
 
 // autoCompleteKnownCmds finds completions for built-in commands based on the given prefix
@@ -106,6 +114,36 @@ func autoCompleteExecutables(prefix string) []string {
 	return suffixes
 }
 
+func autoCompleteFilesAndDirs(prefix string) []string {
+	var pathSuffixes []string
+
+	relPath := ""
+	if strings.Contains(prefix, "./") {
+		relPath, _ = os.Getwd() // TODO: treat error? maybe once I add debug
+		prefix = strings.Trim(prefix, "./")
+	} else {
+		relPath = path.Dir(prefix)
+	}
+
+	files, err := os.ReadDir(relPath)
+	if err != nil {
+		return pathSuffixes // TODO: treat error? maybe once I add debug
+	}
+
+	relevantPrefix := prefix[strings.LastIndex(prefix, "/")+1:]
+
+	for _, file := range files {
+		after, found := strings.CutPrefix(file.Name(), relevantPrefix)
+		afterArr := strings.Split(after, "/") // TODO: this is sooooo hacky....
+		after = afterArr[len(afterArr)-1]
+		if found {
+			pathSuffixes = append(pathSuffixes, after)
+		}
+	}
+
+	return pathSuffixes
+}
+
 // processDirectory searches for file names in a given directory that match the provided prefix
 // and sends them to a channel for further processing
 func processDirectory(prefix, directory string, suffixesChan chan<- string) {
@@ -119,10 +157,9 @@ func processDirectory(prefix, directory string, suffixesChan chan<- string) {
 			continue
 		}
 
-		// if file.Type()&0111 == 0 {
-		// 	continue // Skip non-executable files
-		// }
-		// TODO:: this is really slow :(
+		if file.Type()&0111 == 0 {
+			continue // Skip non-executable files
+		}
 
 		after, found := strings.CutPrefix(file.Name(), prefix)
 		if found {

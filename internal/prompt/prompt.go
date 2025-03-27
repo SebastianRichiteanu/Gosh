@@ -56,7 +56,7 @@ loop:
 		switch c {
 		case '\x03': // Ctrl+C
 			return builtins.BuiltinExit, false
-		case '\x0C': // Ctrl+L 
+		case '\x0C': // Ctrl+L
 			return builtins.BuiltinClear, false
 		case '\r', '\n': // Enter
 			fmt.Fprint(os.Stdout, "\r\n")
@@ -67,16 +67,33 @@ loop:
 				fmt.Fprint(os.Stdout, "\b \b")
 			}
 		case '\t': // Tab
-			suffixes := completer.Autocomplete(knownCmds, input)
+			suffixes, _ := completer.Autocomplete(knownCmds, input)
 			if len(suffixes) == 0 {
 				fmt.Fprintf(os.Stdout, "\a")
+				continue
+			}
+
+			suffixAppender := " "
+
+			splitInput := input
+			if strings.Contains(input, " ") {
+				splitInputArr := strings.Split(input, " ")
+				if len(splitInputArr) == 0 {
+					continue // TODO: not sure?
+				}
+
+				// TODO: This entire implementation sucks, need to refactor
+				splitInputArr = strings.Split(splitInputArr[len(splitInputArr)-1], "/") 
+
+				splitInput = splitInputArr[len(splitInputArr)-1]
+				suffixAppender = "/" // TODO: only do this is the file is a dir....
 			}
 
 			if len(suffixes) == 1 {
 				suffix := suffixes[0]
 
-				input += suffix + " "
-				fmt.Fprint(os.Stdout, suffix+" ")
+				input += suffix + suffixAppender
+				fmt.Fprint(os.Stdout, suffix+suffixAppender)
 
 				continue
 			}
@@ -98,7 +115,7 @@ loop:
 
 			var suffixesWithInput []string
 			for _, suffix := range suffixes {
-				suffixesWithInput = append(suffixesWithInput, input+suffix)
+				suffixesWithInput = append(suffixesWithInput, splitInput+suffix)
 			}
 
 			fmt.Fprintf(os.Stdout, "\r\n%s\n\r", strings.Join(suffixesWithInput, "  "))

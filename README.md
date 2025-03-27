@@ -37,12 +37,13 @@ Note: This section is for stages 2 and beyond.
 
 # TODO
 
-- autocomplete for dirs is broken? :( oh no
+
 - force "$ " (len > 2 :hm:)
 
 - add debugger? + config??
 - todos
 - press up history
+- better input handling, for example arrow left right + delete will break it
 - pipes
 - background exec 
 - alias?
