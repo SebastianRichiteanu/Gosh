@@ -50,11 +50,19 @@ Note: This section is for stages 2 and beyond.
 
 - add debugger? + config??
 - todos
-- press up history
-- better input handling, for example arrow left right + delete will break it
+- press up history (this is done and working but with a caveat: current prompt is not saved if i press up and then down to go back to it)
 - pipes
 - background exec 
 - alias?
 - persistent history?
 - env vars?
 - readme
+
+- tests for autocompletion!!!
+   Builtin completion
+   Completion with arguments
+   Missing completions
+   Executable completion
+   Multiple completions
+   Partial completions
+

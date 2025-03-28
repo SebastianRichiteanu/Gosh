@@ -1,10 +1,13 @@
 package utils
 
 import (
+	"log"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/SebastianRichiteanu/Gosh/internal/types"
 )
@@ -88,4 +91,15 @@ func GetStdStream(input string, pos int) (int, error) {
 	}
 
 	return strconv.Atoi(string(input[pos]))
+}
+
+func BlockCtrlC() {
+	// Create a channel to listen for incoming OS signals
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT) // Listen for SIGINT (Ctrl+C)
+
+	go func() {
+		<-sigChan
+		log.Println("Ctrl+C caught, but not exiting...")
+	}()
 }

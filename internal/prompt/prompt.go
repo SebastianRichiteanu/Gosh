@@ -1,18 +1,16 @@
 package prompt
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
 
-	"golang.org/x/term"
-
 	"github.com/SebastianRichiteanu/Gosh/internal/builtins"
 	"github.com/SebastianRichiteanu/Gosh/internal/completer"
 	"github.com/SebastianRichiteanu/Gosh/internal/types"
 	"github.com/SebastianRichiteanu/Gosh/internal/utils"
+	"github.com/mattn/go-tty"
 )
 
 var (
@@ -24,67 +22,67 @@ type Prompt struct {
 	knownCmds     *types.CommandMap
 	autocompleter *completer.Autocompleter
 	history       []string
+	historyIndex  int
 }
 
 func NewPrompt(knownCmds *types.CommandMap, autocompleter *completer.Autocompleter) *Prompt {
 	return &Prompt{
 		knownCmds:     knownCmds,
 		autocompleter: autocompleter,
-		history:       make([]string, 0),
+		history:       []string{},
+		historyIndex:  -1,
 	}
 }
 
-// Prompt prints the shell prompt, handles user input, and returns the parsed command and tokens
-func (p *Prompt) HandlePrompt(oldInput string) (types.Prompt, string, error) {
-	fmt.Fprint(os.Stdout, "$ "+oldInput)
-
-	input, skipExec := p.readInput(oldInput)
+func (p *Prompt) HandlePrompt(previousInput string) (types.Prompt, string, error) {
+	fmt.Print("$ " + previousInput)
+	input, skipExec := p.readInput(previousInput)
 	if skipExec {
 		return types.Prompt{}, input, nil
 	}
-
 	return p.parseInput(strings.TrimSpace(input))
 }
 
-// readInput handles reading the user input, processing special characters, and returning the final input string
-func (p *Prompt) readInput(oldInput string) (string, bool) {
-	input := oldInput
-	pressedTab := false
-
-	historyIndex := len(p.history)
-
-	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+func (p *Prompt) readInput(previousInput string) (string, bool) {
+	tty, err := tty.Open()
 	if err != nil {
 		panic(err)
 	}
-	defer term.Restore(int(os.Stdin.Fd()), oldState)
-	r := bufio.NewReader(os.Stdin)
+	defer tty.Close()
 
-loop:
+	input := []rune(previousInput)
+	cursor := len(previousInput)
+	pressedTab := false
+
 	for {
-		c, _, err := r.ReadRune()
+		char, err := tty.ReadRune()
 		if err != nil {
-			fmt.Println(err)
 			continue
 		}
-		switch c {
-		case '\x03': // Ctrl+C
-			return builtins.BuiltinExit, false
-		case '\x0C': // Ctrl+L
+
+		switch char {
+		case 12: // Ctrl+L
 			return builtins.BuiltinClear, false
-		case '\r', '\n': // Enter
-			fmt.Fprint(os.Stdout, "\r\n")
-			if strings.TrimSpace(input) != "" {
-				p.history = append(p.history, input)
+		case 13: // Enter
+			fmt.Println()
+			if len(input) > 0 {
+				p.history = append(p.history, string(input))
 			}
-			break loop
-		case '\x7F': // Backspace
-			if length := len(input); length > 0 {
-				input = input[:length-1]
-				fmt.Fprint(os.Stdout, "\b \b")
+			p.historyIndex = len(p.history)
+			return string(input), false
+		case 127: // Backspace
+			if cursor > 0 {
+				input = append(input[:cursor-1], input[cursor:]...)
+				cursor--
+				fmt.Printf("\r$ %s \033[K", string(input))  // Clear line after cursor
+				fmt.Printf("\033[%dD", len(input)-cursor+1) // Move cursor back
 			}
-		case '\t': // Tab
-			suffixes, _ := p.autocompleter.Autocomplete(*p.knownCmds, input)
+		case 9: // Tab (Autocomplete)
+			// TODO: move the below and maybe only handle runes?
+
+			inputAsStr := string(input)
+
+			suffixes, _ := p.autocompleter.Autocomplete(*p.knownCmds, inputAsStr)
 			if len(suffixes) == 0 {
 				fmt.Fprintf(os.Stdout, "\a")
 				continue
@@ -92,14 +90,13 @@ loop:
 
 			suffixAppender := " "
 
-			splitInput := input
-			if strings.Contains(input, " ") {
-				splitInputArr := strings.Split(input, " ")
+			splitInput := inputAsStr
+			if strings.Contains(inputAsStr, " ") {
+				splitInputArr := strings.Split(inputAsStr, " ")
 				if len(splitInputArr) == 0 {
 					continue // TODO: not sure?
 				}
 
-				// TODO: This entire implementation sucks, need to refactor
 				splitInputArr = strings.Split(splitInputArr[len(splitInputArr)-1], "/")
 
 				splitInput = splitInputArr[len(splitInputArr)-1]
@@ -109,7 +106,9 @@ loop:
 			if len(suffixes) == 1 {
 				suffix := suffixes[0]
 
-				input += suffix + suffixAppender
+				input = append(input, []rune(suffix)...)
+				input = append(input, []rune(suffixAppender)...)
+
 				fmt.Fprint(os.Stdout, suffix+suffixAppender)
 
 				continue
@@ -118,7 +117,7 @@ loop:
 			// 2 or more suffixes
 			common := p.autocompleter.FindLongestPrefix(suffixes)
 			if common != "" {
-				input += common
+				input = append(input, []rune(common)...)
 				fmt.Fprint(os.Stdout, common)
 				pressedTab = false
 				continue
@@ -138,42 +137,47 @@ loop:
 			fmt.Fprintf(os.Stdout, "\r\n%s\n\r", strings.Join(suffixesWithInput, "  "))
 			pressedTab = false
 
-			return input, true // return true so we don't exec
-		case '\x1B': // Escape sequences (arrow keys)
-			r2, _, _ := r.ReadRune()
-			r3, _, _ := r.ReadRune()
-
-			if r2 == '\x5B' { // Arrow key sequence
-				if r3 == '\x41' { // Up Arrow
-					if historyIndex > 0 {
-						historyIndex--
-						input = p.history[historyIndex]
-						fmt.Print("\r$ " + input) // Overwrite current input
-					} else if historyIndex == -1 && len(p.history) > 0 {
-						historyIndex = len(p.history) - 1
-						input = p.history[historyIndex]
-						fmt.Print("\r$ " + input)
+			return string(input), true // return true so we don't exec
+		case 27: // Escape sequences (Arrow keys)
+			if r2, _ := tty.ReadRune(); r2 == 91 {
+				switch r3, _ := tty.ReadRune(); r3 {
+				case 65: // Up Arrow
+					if p.historyIndex > 0 {
+						p.historyIndex--
+						input = []rune(p.history[p.historyIndex])
+						cursor = len(input)
+						fmt.Printf("\r$ %s\033[K", string(input))
 					}
-				} else if r3 == '\x42' { // Down Arrow
-					if historyIndex < len(p.history)-1 {
-						historyIndex++
-						input = p.history[historyIndex]
-						fmt.Print("\r$ " + input)
+				case 66: // Down Arrow
+					if p.historyIndex < len(p.history)-1 {
+						p.historyIndex++
+						input = []rune(p.history[p.historyIndex])
+						cursor = len(input)
+						fmt.Printf("\r$ %s\033[K", string(input))
 					} else {
-						historyIndex = len(p.history)
-						input = ""
-						fmt.Print("\r$                                               ") // Clear input line
-						// TODO: the above is trivial implementation, need to do prompt handling better, maybe use tty directly
+						p.historyIndex = len(p.history)
+						input = []rune{}
+						fmt.Print("\r$ \033[K")
+					}
+				case 67: // Right Arrow
+					if cursor < len(input) {
+						cursor++
+						fmt.Print("\033[C")
+					}
+				case 68: // Left Arrow
+					if cursor > 0 {
+						cursor--
+						fmt.Print("\033[D")
 					}
 				}
 			}
-
 		default:
-			input += string(c)
-			fmt.Fprint(os.Stdout, string(c))
+			input = append(input[:cursor], append([]rune{char}, input[cursor:]...)...)
+			cursor++
+			fmt.Printf("\r$ %s ", string(input))
+			fmt.Printf("\033[%dD", len(input)-cursor+1) // Move cursor back to correct position
 		}
 	}
-	return input, false
 }
 
 // parseInput parses the user input, breaking it into tokens, handling quotes and escape characters, and detecting redirection

@@ -211,6 +211,8 @@ func TestShell(t *testing.T) {
 					t.Errorf("Failed to write to PTY: %v", err)
 				}
 
+				time.Sleep(100 * time.Millisecond)
+
 				got, err := readOutput(ptyMaster)
 				if (err != nil) != test.wantErr {
 					t.Errorf("wrong output error=%v, wantErr %v", err, test.wantErr)
