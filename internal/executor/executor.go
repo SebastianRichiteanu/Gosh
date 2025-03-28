@@ -11,24 +11,36 @@ import (
 	"github.com/SebastianRichiteanu/Gosh/internal/utils"
 )
 
-// Exec executes the given command based on the parsed prompt
-func Exec(prompt types.Prompt, knownCmds types.CommandMap) {
+type Executor struct {
+	knownCmds *types.CommandMap
+}
+
+func NewExecutor(knownCmds *types.CommandMap) *Executor {
+	return &Executor{
+		knownCmds: knownCmds,
+	}
+}
+
+// Execute executes the given command based on the parsed prompt
+func (e *Executor) Execute(prompt types.Prompt) {
 	if len(prompt.Tokens) == 0 {
 		return
 	}
 
-	knownCmd, isKnownCmd := knownCmds[prompt.Tokens[0]]
-	if isKnownCmd {
-		execBuiltin(knownCmd, prompt)
-		return
+	if e.knownCmds != nil {
+		knownCmd, isKnownCmd := (*e.knownCmds)[prompt.Tokens[0]]
+		if isKnownCmd {
+			e.execBuiltin(knownCmd, prompt)
+			return
+		}
 	}
 
-	execBinary(prompt)
+	e.execBinary(prompt)
 }
 
 // execBuiltin executes a built-in command and handles its output (stdout, stderr)
-func execBuiltin(knownCmd types.Command, prompt types.Prompt) {
-	output := runBuiltin(knownCmd, prompt)
+func (e *Executor) execBuiltin(knownCmd types.Command, prompt types.Prompt) {
+	output := e.runBuiltin(knownCmd, prompt)
 
 	if len(output) != 2 {
 		panic(fmt.Errorf("command did not return 2 out streams"))
@@ -38,15 +50,15 @@ func execBuiltin(knownCmd types.Command, prompt types.Prompt) {
 	stderr := output[1]
 
 	if prompt.RedirectFile == "" {
-		handleDirectOutput(stdout, stderr)
+		e.handleDirectOutput(stdout, stderr)
 		return
 	}
 
-	handleFileOutput(prompt, stdout, stderr)
+	e.handleFileOutput(prompt, stdout, stderr)
 }
 
 // handleDirectOutput prints the command's stdout or stderr directly to the terminal
-func handleDirectOutput(stdout, stderr reflect.Value) {
+func (e *Executor) handleDirectOutput(stdout, stderr reflect.Value) {
 	if stderr.IsNil() {
 		fmt.Printf("%s", stdout.String())
 		return
@@ -56,7 +68,7 @@ func handleDirectOutput(stdout, stderr reflect.Value) {
 }
 
 // handleFileOutput handles redirecting command output to a file based on the prompt's redirection
-func handleFileOutput(prompt types.Prompt, stdout, stderr reflect.Value) {
+func (e *Executor) handleFileOutput(prompt types.Prompt, stdout, stderr reflect.Value) {
 	file, err := utils.OpenFileForStdout(prompt.RedirectFile, prompt.Truncate)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -81,7 +93,7 @@ func handleFileOutput(prompt types.Prompt, stdout, stderr reflect.Value) {
 }
 
 // runBuiltin runs a built-in function dynamically using reflection, passing the arguments from the prompt
-func runBuiltin(cmd types.Command, prompt types.Prompt) []reflect.Value {
+func (e *Executor) runBuiltin(cmd types.Command, prompt types.Prompt) []reflect.Value {
 	args := prompt.Tokens[1:]
 
 	fctValue := reflect.ValueOf(cmd)
@@ -122,7 +134,7 @@ func runBuiltin(cmd types.Command, prompt types.Prompt) []reflect.Value {
 
 // execBinary executes an external command by searching for the binary in the system's PATH
 // and invoking it with the provided arguments
-func execBinary(prompt types.Prompt) {
+func (e *Executor) execBinary(prompt types.Prompt) {
 	binary := prompt.Tokens[0]
 	args := prompt.Tokens[1:]
 

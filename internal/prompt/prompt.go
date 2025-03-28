@@ -20,26 +20,38 @@ var (
 	errUnterminatedDoubleQuote = errors.New("unterminated double quotes")
 )
 
+type Prompt struct {
+	knownCmds     *types.CommandMap
+	autocompleter *completer.Autocompleter
+	history       []string
+}
+
+func NewPrompt(knownCmds *types.CommandMap, autocompleter *completer.Autocompleter) *Prompt {
+	return &Prompt{
+		knownCmds:     knownCmds,
+		autocompleter: autocompleter,
+		history:       make([]string, 0),
+	}
+}
+
 // Prompt prints the shell prompt, handles user input, and returns the parsed command and tokens
-func Prompt(knownCmds types.CommandMap, oldInput string, history []string) (types.Prompt, string, []string, error) {
+func (p *Prompt) HandlePrompt(oldInput string) (types.Prompt, string, error) {
 	fmt.Fprint(os.Stdout, "$ "+oldInput)
 
-	input, history, skipExec := readInput(oldInput, history, knownCmds)
+	input, skipExec := p.readInput(oldInput)
 	if skipExec {
-		return types.Prompt{}, input, history, nil
+		return types.Prompt{}, input, nil
 	}
 
-	return parseInput(strings.TrimSpace(input), history)
-
-	// TODO: I don't really like that we pass the commands like args :(
+	return p.parseInput(strings.TrimSpace(input))
 }
 
 // readInput handles reading the user input, processing special characters, and returning the final input string
-func readInput(oldInput string, history []string, knownCmds types.CommandMap) (string, []string, bool) {
+func (p *Prompt) readInput(oldInput string) (string, bool) {
 	input := oldInput
 	pressedTab := false
 
-	historyIndex := len(history)
+	historyIndex := len(p.history)
 
 	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
@@ -57,13 +69,13 @@ loop:
 		}
 		switch c {
 		case '\x03': // Ctrl+C
-			return builtins.BuiltinExit, history, false
+			return builtins.BuiltinExit, false
 		case '\x0C': // Ctrl+L
-			return builtins.BuiltinClear, history, false
+			return builtins.BuiltinClear, false
 		case '\r', '\n': // Enter
 			fmt.Fprint(os.Stdout, "\r\n")
 			if strings.TrimSpace(input) != "" {
-				history = append(history, input)
+				p.history = append(p.history, input)
 			}
 			break loop
 		case '\x7F': // Backspace
@@ -72,7 +84,7 @@ loop:
 				fmt.Fprint(os.Stdout, "\b \b")
 			}
 		case '\t': // Tab
-			suffixes, _ := completer.Autocomplete(knownCmds, input)
+			suffixes, _ := p.autocompleter.Autocomplete(*p.knownCmds, input)
 			if len(suffixes) == 0 {
 				fmt.Fprintf(os.Stdout, "\a")
 				continue
@@ -104,7 +116,7 @@ loop:
 			}
 
 			// 2 or more suffixes
-			common := completer.FindLongestPrefix(suffixes)
+			common := p.autocompleter.FindLongestPrefix(suffixes)
 			if common != "" {
 				input += common
 				fmt.Fprint(os.Stdout, common)
@@ -126,7 +138,7 @@ loop:
 			fmt.Fprintf(os.Stdout, "\r\n%s\n\r", strings.Join(suffixesWithInput, "  "))
 			pressedTab = false
 
-			return input, history, true // return true so we don't exec
+			return input, true // return true so we don't exec
 		case '\x1B': // Escape sequences (arrow keys)
 			r2, _, _ := r.ReadRune()
 			r3, _, _ := r.ReadRune()
@@ -135,20 +147,20 @@ loop:
 				if r3 == '\x41' { // Up Arrow
 					if historyIndex > 0 {
 						historyIndex--
-						input = history[historyIndex]
+						input = p.history[historyIndex]
 						fmt.Print("\r$ " + input) // Overwrite current input
-					} else if historyIndex == -1 && len(history) > 0 {
-						historyIndex = len(history) - 1
-						input = history[historyIndex]
+					} else if historyIndex == -1 && len(p.history) > 0 {
+						historyIndex = len(p.history) - 1
+						input = p.history[historyIndex]
 						fmt.Print("\r$ " + input)
 					}
 				} else if r3 == '\x42' { // Down Arrow
-					if historyIndex < len(history)-1 {
+					if historyIndex < len(p.history)-1 {
 						historyIndex++
-						input = history[historyIndex]
+						input = p.history[historyIndex]
 						fmt.Print("\r$ " + input)
 					} else {
-						historyIndex = len(history)
+						historyIndex = len(p.history)
 						input = ""
 						fmt.Print("\r$                                               ") // Clear input line
 						// TODO: the above is trivial implementation, need to do prompt handling better, maybe use tty directly
@@ -161,11 +173,11 @@ loop:
 			fmt.Fprint(os.Stdout, string(c))
 		}
 	}
-	return input, history, false
+	return input, false
 }
 
 // parseInput parses the user input, breaking it into tokens, handling quotes and escape characters, and detecting redirection
-func parseInput(input string, history []string) (types.Prompt, string, []string, error) {
+func (p *Prompt) parseInput(input string) (types.Prompt, string, error) {
 	parsedPrompt := types.Prompt{
 		StdStream: types.DefaultStdStream,
 		Truncate:  false,
@@ -236,7 +248,7 @@ func parseInput(input string, history []string) (types.Prompt, string, []string,
 
 			parsedPrompt.StdStream, err = utils.GetStdStream(input, i-1)
 			if err != nil {
-				return parsedPrompt, "", history, err
+				return parsedPrompt, "", err
 			}
 
 			if i < len(input)-1 && input[i+1] == '>' {
@@ -246,7 +258,7 @@ func parseInput(input string, history []string) (types.Prompt, string, []string,
 				parsedPrompt.Truncate = true
 			}
 
-			return parsedPrompt, "", history, nil
+			return parsedPrompt, "", nil
 		default:
 			currentToken.WriteByte(char)
 		}
@@ -257,11 +269,11 @@ func parseInput(input string, history []string) (types.Prompt, string, []string,
 	}
 
 	if inSingleQuote {
-		return parsedPrompt, "", history, errUnterminatedSingleQuote
+		return parsedPrompt, "", errUnterminatedSingleQuote
 	}
 	if inDoubleQuote {
-		return parsedPrompt, "", history, errUnterminatedDoubleQuote
+		return parsedPrompt, "", errUnterminatedDoubleQuote
 	}
 
-	return parsedPrompt, "", history, nil
+	return parsedPrompt, "", nil
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/SebastianRichiteanu/Gosh/internal/builtins"
+	"github.com/SebastianRichiteanu/Gosh/internal/completer"
 	"github.com/SebastianRichiteanu/Gosh/internal/executor"
 	"github.com/SebastianRichiteanu/Gosh/internal/prompt"
 )
@@ -9,11 +10,14 @@ import (
 func main() {
 	knownCmds := builtins.InitBuiltins()
 
-	var previousInput string // TODO: scrap this and use history
-	var history []string
+	autoCompleter := completer.NewAutocompleter(&knownCmds)
+	prompt := prompt.NewPrompt(&knownCmds, autoCompleter)
+	executor := executor.NewExecutor(&knownCmds)
+
+	var previousInput string
 
 	for {
-		prompt, newInput, newHistory, err := prompt.Prompt(knownCmds, previousInput, history)
+		prompt, newInput, err := prompt.HandlePrompt(previousInput)
 		if err != nil {
 			panic(err)
 		}
@@ -25,8 +29,6 @@ func main() {
 			previousInput = ""
 		}
 
-		history = newHistory
-
-		executor.Exec(prompt, knownCmds)
+		executor.Execute(prompt)
 	}
 }

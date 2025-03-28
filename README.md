@@ -44,7 +44,9 @@ Note: This section is for stages 2 and beyond.
    test..sh  test.s
 
 
-- force "$ " (len > 2 :hm:)
+
+
+
 
 - add debugger? + config??
 - todos
@@ -53,5 +55,6 @@ Note: This section is for stages 2 and beyond.
 - pipes
 - background exec 
 - alias?
+- persistent history?
 - env vars?
 - readme

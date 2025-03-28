@@ -10,8 +10,18 @@ import (
 	"github.com/SebastianRichiteanu/Gosh/internal/types"
 )
 
+type Autocompleter struct {
+	knownCmds *types.CommandMap
+}
+
+func NewAutocompleter(knownCmds *types.CommandMap) *Autocompleter {
+	return &Autocompleter{
+		knownCmds: knownCmds,
+	}
+}
+
 // FindLongestPrefix takes a list of command suffixes and returns the longest common prefix among them
-func FindLongestPrefix(cmds []string) string {
+func (a *Autocompleter) FindLongestPrefix(cmds []string) string {
 	common := ""
 	isCommon := true
 
@@ -37,7 +47,7 @@ func FindLongestPrefix(cmds []string) string {
 
 // Autocomplete generates a list of possible completions for a given prefix
 // It combines suggestions from known built-in commands and executable files in the system's PATH
-func Autocomplete(knownCmds types.CommandMap, prefix string) ([]string, bool) {
+func (a *Autocompleter) Autocomplete(knownCmds types.CommandMap, prefix string) ([]string, bool) {
 	if prefix == "" {
 		return nil, false
 	}
@@ -47,12 +57,12 @@ func Autocomplete(knownCmds types.CommandMap, prefix string) ([]string, bool) {
 		// TODO: No autocomplete inside quotes
 		lastPartPrefix := strings.Split(prefix, " ")
 
-		return autoCompleteFilesAndDirs(lastPartPrefix[len(lastPartPrefix)-1]), true
+		return a.autoCompleteFilesAndDirs(lastPartPrefix[len(lastPartPrefix)-1]), true
 	}
 
 	var suffixes []string
-	suffixes = append(suffixes, autoCompleteKnownCmds(knownCmds, prefix)...)
-	suffixes = append(suffixes, autoCompleteExecutables(prefix)...)
+	suffixes = append(suffixes, a.autoCompleteKnownCmds(knownCmds, prefix)...)
+	suffixes = append(suffixes, a.autoCompleteExecutables(prefix)...)
 
 	uniqueSuffixes := make(map[string]bool)
 	var result []string
@@ -70,7 +80,7 @@ func Autocomplete(knownCmds types.CommandMap, prefix string) ([]string, bool) {
 }
 
 // autoCompleteKnownCmds finds completions for built-in commands based on the given prefix
-func autoCompleteKnownCmds(knownCmds types.CommandMap, prefix string) []string {
+func (a *Autocompleter) autoCompleteKnownCmds(knownCmds types.CommandMap, prefix string) []string {
 	var knownCmdsSuffixes []string
 
 	for cmd := range knownCmds {
@@ -84,7 +94,7 @@ func autoCompleteKnownCmds(knownCmds types.CommandMap, prefix string) []string {
 }
 
 // autoCompleteExecutables finds completions for executable commands in the system's PATH based on the given prefix
-func autoCompleteExecutables(prefix string) []string {
+func (a *Autocompleter) autoCompleteExecutables(prefix string) []string {
 	path := os.Getenv(types.PathEnvVar)
 	directories := strings.Split(path, string(types.PathDelimiter))
 
@@ -96,7 +106,7 @@ func autoCompleteExecutables(prefix string) []string {
 		wg.Add(1)
 		go func(dir string) {
 			defer wg.Done()
-			processDirectory(prefix, dir, suffixesChan)
+			a.processDirectory(prefix, dir, suffixesChan)
 		}(directory)
 	}
 
@@ -114,7 +124,7 @@ func autoCompleteExecutables(prefix string) []string {
 	return suffixes
 }
 
-func autoCompleteFilesAndDirs(prefix string) []string {
+func (a *Autocompleter) autoCompleteFilesAndDirs(prefix string) []string {
 	var pathSuffixes []string
 
 	relPath := ""
@@ -146,7 +156,7 @@ func autoCompleteFilesAndDirs(prefix string) []string {
 
 // processDirectory searches for file names in a given directory that match the provided prefix
 // and sends them to a channel for further processing
-func processDirectory(prefix, directory string, suffixesChan chan<- string) {
+func (a *Autocompleter) processDirectory(prefix, directory string, suffixesChan chan<- string) {
 	files, err := os.ReadDir(directory)
 	if err != nil {
 		return
