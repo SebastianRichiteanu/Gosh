@@ -124,6 +124,7 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 					} else {
 						p.historyIndex = len(p.history)
 						input = []rune{}
+						cursor = len(input)
 						fmt.Print("\r$ \033[K")
 					}
 				case 67: // Right Arrow

@@ -61,8 +61,6 @@ Note: This section is for stages 2 and beyond.
 
 
 
-
-
 - tests for autocompletion!!!
    Builtin completion
    Completion with arguments
