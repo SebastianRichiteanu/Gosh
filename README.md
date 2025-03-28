@@ -53,11 +53,19 @@ Note: This section is for stages 2 and beyond.
 - todos
 - press up history (this is done and working but with a caveat: current prompt is not saved if i press up and then down to go back to it)
 - pipes
-- background exec 
+- job control: fg, bg & jobs
 - alias?
 - persistent history?
-- env vars?
+- variable interpolation? 
 - readme
+- run linter :) and maybe add it as make and add a conifg for it?
+- for the logger if I delete the log while the shell is running it won't create one due to the current implementation
+   - should be easy to fix, but probably create a logger component? 
+
+- for history: if i do up arrow a couple of times and then delete a char, should I reset the index or just go up? :hm:
+   - i think I should keep the index but also can edit history
+   - so for example if I delete a couple of chars from an above entry 
+   - if i go up/down and again to that index the change should be there 
 
 
 

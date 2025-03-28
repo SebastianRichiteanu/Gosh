@@ -18,6 +18,8 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 	defer tty.Close()
 
 	input := []rune(previousInput)
+	inputBkp := []rune{}
+
 	cursor := len(previousInput)
 	pressedTab := false
 
@@ -110,22 +112,30 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 				switch r3, _ := tty.ReadRune(); r3 {
 				case 65: // Up Arrow
 					if p.historyIndex > 0 {
+						if p.historyIndex == len(p.history) {
+							inputBkp = input
+						}
+
 						p.historyIndex--
 						input = []rune(p.history[p.historyIndex])
 						cursor = len(input)
 						fmt.Printf("\r$ %s\033[K", string(input))
 					}
 				case 66: // Down Arrow
-					if p.historyIndex < len(p.history)-1 {
+					if p.historyIndex < len(p.history)-1 { // TODO: I think the historyIndex is broken???
 						p.historyIndex++
 						input = []rune(p.history[p.historyIndex])
 						cursor = len(input)
 						fmt.Printf("\r$ %s\033[K", string(input))
-					} else {
+					} else if p.historyIndex == len(p.history)-1 {
 						p.historyIndex = len(p.history)
-						input = []rune{}
+						input = inputBkp
 						cursor = len(input)
-						fmt.Print("\r$ \033[K")
+						fmt.Print("\r$ \033[K", string(input))
+						inputBkp = []rune{}
+					} else {
+						fmt.Fprintf(os.Stdout, "\a")
+						continue
 					}
 				case 67: // Right Arrow
 					if cursor < len(input) {
