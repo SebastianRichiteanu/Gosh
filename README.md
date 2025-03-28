@@ -48,7 +48,8 @@ Note: This section is for stages 2 and beyond.
 
 
 
-- add debugger? + config??
+- add debugger?
+- add config??
 - todos
 - press up history (this is done and working but with a caveat: current prompt is not saved if i press up and then down to go back to it)
 - pipes
@@ -57,6 +58,10 @@ Note: This section is for stages 2 and beyond.
 - persistent history?
 - env vars?
 - readme
+
+
+
+
 
 - tests for autocompletion!!!
    Builtin completion

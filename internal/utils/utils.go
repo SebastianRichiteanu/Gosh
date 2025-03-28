@@ -93,6 +93,8 @@ func GetStdStream(input string, pos int) (int, error) {
 	return strconv.Atoi(string(input[pos]))
 }
 
+// BlockCtrlC will start a channel and will listen for OS signals
+// and will ignore Ctrl+C to handle exit gracefully
 func BlockCtrlC() {
 	// Create a channel to listen for incoming OS signals
 	sigChan := make(chan os.Signal, 1)
@@ -102,4 +104,29 @@ func BlockCtrlC() {
 		<-sigChan
 		log.Println("Ctrl+C caught, but not exiting...")
 	}()
+}
+
+// FindLongestPrefix takes a list of strings and returns the longest common prefix among them
+func FindLongestPrefix(cmds []string) string {
+	common := ""
+	isCommon := true
+
+	for i := 0; isCommon; i++ {
+		var current byte
+		for j := 0; j < len(cmds); j++ {
+			if i >= len(cmds[j]) {
+				isCommon = false
+				break
+			} else if j == 0 {
+				current = cmds[j][i]
+			} else if current != cmds[j][i] {
+				isCommon = false
+				break
+			}
+		}
+		if isCommon {
+			common += string(current)
+		}
+	}
+	return common
 }

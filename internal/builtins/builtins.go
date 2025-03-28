@@ -22,20 +22,20 @@ const (
 	ClearControlSeq = "\033[H\033[2J"
 )
 
-var knownCmds types.CommandMap = make(types.CommandMap)
+var builtinCmds types.CommandMap = make(types.CommandMap)
 
-// InitBuiltins initializes all built-in commands and stores them in a CommandMap for easy lookup
-func InitBuiltins() types.CommandMap {
+// InitBuiltinCmds initializes all built-in commands and stores them in a CommandMap for easy lookup
+func InitBuiltinCmds() types.CommandMap {
 	// All fct ret are (string, error) for now at least
 
-	knownCmds[BuiltinExit] = builtinExit()
-	knownCmds[BuiltinEcho] = builtinEcho()
-	knownCmds[BuiltinPwd] = builtinPwd()
-	knownCmds[BuiltinCd] = builtinCd()
-	knownCmds[BuiltinType] = builtinType()
-	knownCmds[BuiltinClear] = builtinClear()
+	builtinCmds[BuiltinExit] = builtinExit()
+	builtinCmds[BuiltinEcho] = builtinEcho()
+	builtinCmds[BuiltinPwd] = builtinPwd()
+	builtinCmds[BuiltinCd] = builtinCd()
+	builtinCmds[BuiltinType] = builtinType()
+	builtinCmds[BuiltinClear] = builtinClear()
 
-	return knownCmds
+	return builtinCmds
 }
 
 // builtinExit defines the exit behavior of the shell
@@ -101,7 +101,7 @@ func builtinCd() types.Command {
 // It prints the type of a given command (either a built-in or external command).
 func builtinType() types.Command {
 	return func(cmd string) (string, error) {
-		if _, isKnownCmd := knownCmds[cmd]; isKnownCmd || cmd == BuiltinType {
+		if _, isKnownCmd := builtinCmds[cmd]; isKnownCmd || cmd == BuiltinType {
 			return "", fmt.Errorf("%s is a shell builtin", cmd)
 		}
 
