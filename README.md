@@ -48,10 +48,8 @@ Note: This section is for stages 2 and beyond.
 
 
 
-- add debugger?
 - add config??
 - todos
-- press up history (this is done and working but with a caveat: current prompt is not saved if i press up and then down to go back to it)
 - pipes
 - job control: fg, bg & jobs
 - alias?

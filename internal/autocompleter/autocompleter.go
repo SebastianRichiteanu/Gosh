@@ -4,16 +4,19 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/SebastianRichiteanu/Gosh/internal/logger"
 	"github.com/SebastianRichiteanu/Gosh/internal/types"
 )
 
 type Autocompleter struct {
 	builtinCmds *types.CommandMap
+	logger      *logger.Logger
 }
 
-func NewAutocompleter(builtinCmds *types.CommandMap) *Autocompleter {
+func NewAutocompleter(builtinCmds *types.CommandMap, logger *logger.Logger) *Autocompleter {
 	return &Autocompleter{
 		builtinCmds: builtinCmds,
+		logger:      logger,
 	}
 }
 

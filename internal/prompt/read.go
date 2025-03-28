@@ -122,7 +122,7 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 						fmt.Printf("\r$ %s\033[K", string(input))
 					}
 				case 66: // Down Arrow
-					if p.historyIndex < len(p.history)-1 { // TODO: I think the historyIndex is broken???
+					if p.historyIndex < len(p.history)-1 { // TODO: I think the historyIndex is broken
 						p.historyIndex++
 						input = []rune(p.history[p.historyIndex])
 						cursor = len(input)
