@@ -1,8 +1,11 @@
 package utils
 
 import (
+	"bufio"
+	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"strconv"
@@ -129,6 +132,54 @@ func FindLongestPrefix(cmds []string) string {
 		}
 	}
 	return common
+}
+
+func HandleExportLine(line string) {
+	line = strings.Trim(line, "export")
+	line = strings.Trim(line, " ")
+
+	parts := strings.SplitN(line, "=", 2)
+	key := strings.TrimSpace(parts[0])
+	value := strings.Trim(strings.TrimSpace(parts[1]), `"'`)
+	os.Setenv(key, value)
+}
+
+func SourceFile(filePath string) error {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to open %s: %w", filePath, err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		// Check if it's a variable assignment (e.g., VAR=value)
+		if strings.Contains(line, "=") {
+			HandleExportLine(line)
+			continue
+		}
+
+		// Execute command if not
+		cmd := exec.Command("sh", "-c", line)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		err := cmd.Run()
+		if err != nil {
+			fmt.Println("Error executing command:", line, err)
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("error reading %s: %w", filePath, err)
+	}
+
+	return nil
 }
 
 func ExitShell(exitCode int) {

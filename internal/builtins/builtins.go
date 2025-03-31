@@ -1,13 +1,12 @@
 package builtins
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/SebastianRichiteanu/Gosh/internal/types"
 	"github.com/SebastianRichiteanu/Gosh/internal/utils"
@@ -135,54 +134,26 @@ func builtinSource() types.Command {
 	return func(filePaths ...string) (string, error) {
 		// TODO: double check this function : GOSH_ENABLE_AUTOCOMPLETE=fals
 		for _, filePath := range filePaths {
-			file, err := os.Open(filePath)
-			if err != nil {
-				return "", fmt.Errorf("failed to open %s: %w", filePath, err)
-			}
-			defer file.Close()
-
-			scanner := bufio.NewScanner(file)
-			for scanner.Scan() {
-				line := strings.TrimSpace(scanner.Text())
-
-				if line == "" || strings.HasPrefix(line, "#") {
-					continue
-				}
-
-				// Check if it's a variable assignment (e.g., VAR=value)
-				if strings.Contains(line, "=") {
-					line = strings.Trim(line, "export")
-					line = strings.Trim(line, " ")
-
-					parts := strings.SplitN(line, "=", 2)
-					key := strings.TrimSpace(parts[0])
-					value := strings.Trim(strings.TrimSpace(parts[1]), `"'`)
-					os.Setenv(key, value)
-					continue
-				}
-
-				// Execute command if not
-				cmd := exec.Command("sh", "-c", line)
-				cmd.Stdout = os.Stdout
-				cmd.Stderr = os.Stderr
-				err := cmd.Run()
-				if err != nil {
-					fmt.Println("Error executing command:", line, err)
-				}
-			}
-
-			if err := scanner.Err(); err != nil {
-				return "", fmt.Errorf("error reading %s: %w", filePath, err)
+			if err := utils.SourceFile(filePath); err != nil {
+				return "", fmt.Errorf("could not source file at path %s: %v", filePath, err)
 			}
 		}
 
 		reloadCfgChannel <- true
+
+		time.Sleep(time.Millisecond) // The update is a bit slow so wait a milisec before returning
 
 		return "", nil
 	}
 }
 
 func builtinExport() types.Command {
-	return func() {}
-	// TODO
+	return func(line string) (string, error) {
+		utils.HandleExportLine(line)
+		reloadCfgChannel <- true
+
+		time.Sleep(time.Millisecond) // The update is a bit slow so wait a milisec before returning
+
+		return "", nil
+	}
 }

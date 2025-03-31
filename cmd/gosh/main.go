@@ -16,9 +16,12 @@ import (
 func main() {
 	builtinCmds, reloadCfgChannel := builtins.InitBuiltinCmds()
 
-	cfg := config.NewConfig(reloadCfgChannel)
+	cfg, err := config.NewConfig(reloadCfgChannel)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to initialize conifg: %v\n", err)
+	}
 
-	logger, err := logger.NewLogger(cfg.LogFile, cfg.LogLevel) // TODO: this is not dynamic
+	logger, err := logger.NewLogger(cfg.LogFile, cfg.LogLevel)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to initialize logger: %v\n", err)
 		os.Exit(1)

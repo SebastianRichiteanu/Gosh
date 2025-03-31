@@ -17,7 +17,7 @@ var (
 )
 
 type Prompt struct {
-	cfg           config.Config
+	cfg           *config.Config
 	builtinCmds   *types.CommandMap
 	autocompleter *autocompleter.Autocompleter
 	logger        *logger.Logger
@@ -28,7 +28,7 @@ type Prompt struct {
 
 func NewPrompt(builtinCmds *types.CommandMap, autocompleter *autocompleter.Autocompleter, cfg *config.Config, logger *logger.Logger) *Prompt {
 	return &Prompt{
-		cfg:           *cfg,
+		cfg:           cfg,
 		builtinCmds:   builtinCmds,
 		autocompleter: autocompleter,
 		logger:        logger,
@@ -38,8 +38,6 @@ func NewPrompt(builtinCmds *types.CommandMap, autocompleter *autocompleter.Autoc
 }
 
 func (p *Prompt) HandlePrompt(previousInput string) (types.Prompt, string, error) {
-	p.logger.Info(fmt.Sprintf("-----%#v -----", p.cfg)) // TODO: this is not getting updated.....
-
 	fmt.Print(p.cfg.PromptSymbol + " " + previousInput)
 
 	input, skipExec := p.readInput(previousInput)

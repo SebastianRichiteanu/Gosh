@@ -50,13 +50,10 @@ Note: This section is for stages 2 and beyond.
 
 - add config??
 ~/.gosh/
-├── goshenv       → Persistent environment variables (like .zshenv)
-├── goshprofile   → Runs on login (like .zprofile)
 ├── goshrc        → Runs for every interactive shell (like .zshrc)
 ├── goshlogout    → Runs on shell exit (like .zlogout)
 ├── history       → Stores shell history
-├── aliases       → Optional: Stores custom aliases
-├── config.yaml   → Optional: YAML-based config for extra settings
+├── aliases       → Stores custom aliases
 
 
 

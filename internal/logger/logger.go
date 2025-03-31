@@ -25,7 +25,7 @@ var order = map[string]int{
 type Logger struct {
 	logFile     *os.File
 	logFilePath string
-	logLevel    string // TODO: make as part of config
+	logLevel    string
 }
 
 func NewLogger(logFilePath, logLevel string) (*Logger, error) {

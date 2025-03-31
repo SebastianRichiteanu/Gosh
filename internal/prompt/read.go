@@ -69,7 +69,7 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 				splitInputArr = strings.Split(splitInputArr[len(splitInputArr)-1], "/")
 
 				splitInput = splitInputArr[len(splitInputArr)-1]
-				suffixAppender = "/" // TODO: only do this is the file is a dir....
+				suffixAppender = "/" // TODO: only do this if the file is a dir....
 			}
 
 			if len(suffixes) == 1 {

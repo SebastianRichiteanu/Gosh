@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -18,7 +19,7 @@ type Config struct {
 	reloadCfgChannel chan bool
 }
 
-func NewConfig(reloadCfgChannel chan bool) *Config {
+func NewConfig(reloadCfgChannel chan bool) (*Config, error) {
 	cfg := Config{
 		PromptSymbol:       defaultPromptSymbol,
 		LogLevel:           defaultLogLevel,
@@ -30,36 +31,42 @@ func NewConfig(reloadCfgChannel chan bool) *Config {
 		reloadCfgChannel: reloadCfgChannel,
 	}
 
-	// TODO: on create source them
-	// for _, file := range []string{} {
-	// 	fp := filepath.Join(c.GoshHomePath, file)
-	// } TODO: source rc, env
+	goshrcFilePath := filepath.Join(cfg.GoshHomePath, defaultGoshrcFile)
+	goshrcExpandedFilePath, err := utils.ExpandHomePath(goshrcFilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := utils.SourceFile(goshrcExpandedFilePath); err != nil {
+		return nil, err
+	}
 
 	cfg.Update()
 
 	go cfg.listenRefreshChan()
 
-	return &cfg
+	return &cfg, nil
 }
 
 func (c *Config) listenRefreshChan() {
 	for {
 		_ = <-c.reloadCfgChannel
-		c.Update()
+		_ = c.Update() // TODO: hmmmm
 	}
 }
 
-func (c *Config) Update() {
+func (c *Config) Update() error {
 	if envGoshHomePath, exists := os.LookupEnv(envVarGoshHomePath); exists {
 		c.GoshHomePath = envGoshHomePath
 	}
 
-	// TODO: treat error
-	c.GoshHomePath, _ = utils.ExpandHomePath(c.GoshHomePath)
+	var err error
+	if c.GoshHomePath, err = utils.ExpandHomePath(c.GoshHomePath); err != nil {
+		return fmt.Errorf("Failed to expand home path: %v", err)
+	}
 
-	err := os.MkdirAll(c.GoshHomePath, 0755)
-	if err != nil {
-		return // TODO: handle err
+	if err = os.MkdirAll(c.GoshHomePath, 0755); err != nil {
+		return fmt.Errorf("Failed to create dir: %v", err)
 	}
 
 	if prompt, exists := os.LookupEnv(envVarPromptSymbol); exists {
@@ -80,4 +87,6 @@ func (c *Config) Update() {
 
 	c.LogFile = filepath.Join(c.GoshHomePath, c.LogFile)
 	c.HistoryFile = filepath.Join(c.GoshHomePath, c.HistoryFile)
+
+	return nil
 }
