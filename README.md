@@ -58,10 +58,11 @@ Note: This section is for stages 2 and beyond.
 
 
 
-- bug in path autocompletion, the cursor does not move
 - bug in ~ handling????
 
-- add export
+- for ctrl+c print ^C and skip line
+
+
 - todos
 - pipes
 - job control: fg, bg & jobs

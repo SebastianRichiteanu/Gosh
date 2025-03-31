@@ -25,7 +25,7 @@ func NewConfig(reloadCfgChannel chan bool) (*Config, error) {
 		LogLevel:           defaultLogLevel,
 		LogFile:            defaultLogFile,
 		HistoryFile:        defaultHistoryFile,
-		EnableAutoComplete: defaultEnabledAutoComplete,
+		EnableAutoComplete: defaultEnableAutoComplete,
 		GoshHomePath:       defaultGoshHomePath,
 
 		reloadCfgChannel: reloadCfgChannel,
@@ -51,7 +51,7 @@ func NewConfig(reloadCfgChannel chan bool) (*Config, error) {
 func (c *Config) listenRefreshChan() {
 	for {
 		_ = <-c.reloadCfgChannel
-		_ = c.Update() // TODO: hmmmm
+		_ = c.Update() // TODO: treat error?
 	}
 }
 
@@ -81,7 +81,7 @@ func (c *Config) Update() error {
 	if envHistoryFile, exists := os.LookupEnv(envVarHistoryFile); exists {
 		c.HistoryFile = envHistoryFile
 	}
-	if envAutoComplete, exists := os.LookupEnv(envVarEnabledAutoComplete); exists {
+	if envAutoComplete, exists := os.LookupEnv(envVarEnableAutoComplete); exists {
 		c.EnableAutoComplete = envAutoComplete == "true"
 	}
 

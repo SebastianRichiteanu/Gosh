@@ -1,9 +1,9 @@
 package config
 
 const (
-	defaultPromptSymbol        = "$"
-	defaultLogLevel            = "INFO"
-	defaultEnabledAutoComplete = true
+	defaultPromptSymbol       = "$"
+	defaultLogLevel           = "INFO"
+	defaultEnableAutoComplete = true
 
 	defaultGoshHomePath = "~/.gosh"
 	defaultLogFile      = "gosh.log"
@@ -12,10 +12,10 @@ const (
 )
 
 const (
-	envVarPromptSymbol        = "GOSH_SHELL_SYMBOL"
-	envVarLogLevel            = "GOSH_LOG_LEVEL"
-	envVarEnabledAutoComplete = "GOSH_AUTO_COMPLETE"
-	envVarLogFile             = "GOSH_LOG_FILE"
-	envVarHistoryFile         = "GOSH_HISTORY_FILE"
-	envVarGoshHomePath        = "GOSH_CONFIG_HOME"
+	envVarPromptSymbol       = "GOSH_SHELL_SYMBOL"
+	envVarLogLevel           = "GOSH_LOG_LEVEL"
+	envVarEnableAutoComplete = "GOSH_ENABLE_AUTOCOMPLETE"
+	envVarLogFile            = "GOSH_LOG_FILE"
+	envVarHistoryFile        = "GOSH_HISTORY_FILE"
+	envVarGoshHomePath       = "GOSH_CONFIG_HOME"
 )

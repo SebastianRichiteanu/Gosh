@@ -132,7 +132,6 @@ func builtinClear() types.Command {
 // It will source a file
 func builtinSource() types.Command {
 	return func(filePaths ...string) (string, error) {
-		// TODO: double check this function : GOSH_ENABLE_AUTOCOMPLETE=fals
 		for _, filePath := range filePaths {
 			if err := utils.SourceFile(filePath); err != nil {
 				return "", fmt.Errorf("could not source file at path %s: %v", filePath, err)

@@ -135,19 +135,20 @@ func FindLongestPrefix(cmds []string) string {
 }
 
 func HandleExportLine(line string) {
-	line = strings.Trim(line, "export")
+	line = strings.TrimPrefix(line, "export")
 	line = strings.Trim(line, " ")
 
 	parts := strings.SplitN(line, "=", 2)
 	key := strings.TrimSpace(parts[0])
 	value := strings.Trim(strings.TrimSpace(parts[1]), `"'`)
+
 	os.Setenv(key, value)
 }
 
 func SourceFile(filePath string) error {
 	file, err := os.Open(filePath)
 	if err != nil {
-		return fmt.Errorf("failed to open %s: %w", filePath, err)
+		return fmt.Errorf("Failed to open %s: %w", filePath, err)
 	}
 	defer file.Close()
 
@@ -176,7 +177,7 @@ func SourceFile(filePath string) error {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("error reading %s: %w", filePath, err)
+		return fmt.Errorf("Error reading %s: %w", filePath, err)
 	}
 
 	return nil

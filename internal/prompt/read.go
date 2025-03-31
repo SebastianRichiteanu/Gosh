@@ -75,10 +75,11 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 			if len(suffixes) == 1 {
 				suffix := suffixes[0]
 
-				input = append(input, []rune(suffix)...)
-				input = append(input, []rune(suffixAppender)...)
+				suffixWithAppender := suffix + suffixAppender
 
+				input = append(input, []rune(suffixWithAppender)...)
 				fmt.Fprint(os.Stdout, suffix+suffixAppender)
+				cursor += len(suffixWithAppender)
 
 				continue
 			}
@@ -88,6 +89,7 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 			if common != "" {
 				input = append(input, []rune(common)...)
 				fmt.Fprint(os.Stdout, common)
+				cursor += len(common)
 				pressedTab = false
 				continue
 			}
@@ -131,7 +133,7 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 						p.historyIndex = len(p.history)
 						input = inputBkp
 						cursor = len(input)
-						fmt.Print("\r%s \033[K", p.cfg.PromptSymbol, string(input))
+						fmt.Printf("\r%s %s\033[K", p.cfg.PromptSymbol, string(input))
 						inputBkp = []rune{}
 					} else {
 						fmt.Fprintf(os.Stdout, "\a")
