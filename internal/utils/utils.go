@@ -130,3 +130,10 @@ func FindLongestPrefix(cmds []string) string {
 	}
 	return common
 }
+
+func ExitShell(exitCode int) {
+	//logger.Close()
+	// Maybe create chan that waits for signals for stuff that I want to execute before exit
+
+	os.Exit(exitCode)
+}

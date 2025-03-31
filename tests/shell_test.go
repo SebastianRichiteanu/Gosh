@@ -258,7 +258,7 @@ func readOutput(ptyMaster *os.File) (string, error) {
 	}
 
 	// Read until the next prompt
-	output, err := reader.ReadString('$')
+	output, err := reader.ReadString('$') // TODO: add config for tests
 	if err != nil {
 		return "", err
 	}

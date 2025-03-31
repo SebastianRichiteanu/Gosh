@@ -6,6 +6,7 @@ import (
 
 	"github.com/SebastianRichiteanu/Gosh/internal/autocompleter"
 	"github.com/SebastianRichiteanu/Gosh/internal/builtins"
+	"github.com/SebastianRichiteanu/Gosh/internal/config"
 	"github.com/SebastianRichiteanu/Gosh/internal/executor"
 	"github.com/SebastianRichiteanu/Gosh/internal/logger"
 	"github.com/SebastianRichiteanu/Gosh/internal/prompt"
@@ -13,19 +14,19 @@ import (
 )
 
 func main() {
-	// TODO: create config
+	builtinCmds, reloadCfgChannel := builtins.InitBuiltinCmds()
 
-	builtinCmds := builtins.InitBuiltinCmds()
+	cfg := config.NewConfig(reloadCfgChannel)
 
-	logger, err := logger.NewLogger("gosh.log", "INFO")
+	logger, err := logger.NewLogger(cfg.LogFile, cfg.LogLevel) // TODO: this is not dynamic
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to initialize logger: %v\n", err)
 		os.Exit(1)
 	}
 
-	autoCompleter := autocompleter.NewAutocompleter(&builtinCmds, logger)
-	prompt := prompt.NewPrompt(&builtinCmds, autoCompleter, logger)
-	executor := executor.NewExecutor(&builtinCmds, logger)
+	autoCompleter := autocompleter.NewAutocompleter(&builtinCmds, cfg, logger)
+	prompt := prompt.NewPrompt(&builtinCmds, autoCompleter, cfg, logger)
+	executor := executor.NewExecutor(&builtinCmds, cfg, logger)
 
 	utils.BlockCtrlC()
 

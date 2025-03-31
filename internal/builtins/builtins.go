@@ -1,9 +1,11 @@
 package builtins
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 
@@ -12,20 +14,23 @@ import (
 )
 
 const (
-	BuiltinExit  = "exit"
-	BuiltinEcho  = "echo"
-	BuiltinPwd   = "pwd"
-	BuiltinCd    = "cd"
-	BuiltinType  = "type"
-	BuiltinClear = "clear"
+	BuiltinExit   = "exit"
+	BuiltinEcho   = "echo"
+	BuiltinPwd    = "pwd"
+	BuiltinCd     = "cd"
+	BuiltinType   = "type"
+	BuiltinClear  = "clear"
+	BuiltinSource = "source"
+	BuiltinExport = "export"
 
 	ClearControlSeq = "\033[H\033[2J"
 )
 
 var builtinCmds types.CommandMap = make(types.CommandMap)
+var reloadCfgChannel chan bool = make(chan bool)
 
 // InitBuiltinCmds initializes all built-in commands and stores them in a CommandMap for easy lookup
-func InitBuiltinCmds() types.CommandMap {
+func InitBuiltinCmds() (types.CommandMap, chan bool) {
 	// All fct ret are (string, error) for now at least
 
 	builtinCmds[BuiltinExit] = builtinExit()
@@ -34,8 +39,10 @@ func InitBuiltinCmds() types.CommandMap {
 	builtinCmds[BuiltinCd] = builtinCd()
 	builtinCmds[BuiltinType] = builtinType()
 	builtinCmds[BuiltinClear] = builtinClear()
+	builtinCmds[BuiltinSource] = builtinSource()
+	builtinCmds[BuiltinExport] = builtinExport()
 
-	return builtinCmds
+	return builtinCmds, reloadCfgChannel
 }
 
 // builtinExit defines the exit behavior of the shell
@@ -43,7 +50,7 @@ func InitBuiltinCmds() types.CommandMap {
 func builtinExit() types.Command {
 	return func(code ...string) (string, error) {
 		if len(code) == 0 {
-			os.Exit(0)
+			utils.ExitShell(0)
 		}
 
 		codeAsInt, err := strconv.Atoi(code[0])
@@ -51,7 +58,7 @@ func builtinExit() types.Command {
 			return "", err
 		}
 
-		os.Exit(codeAsInt)
+		utils.ExitShell(codeAsInt)
 		return "", nil
 	}
 }
@@ -120,4 +127,62 @@ func builtinClear() types.Command {
 	return func() (string, error) {
 		return ClearControlSeq, nil
 	}
+}
+
+// builtinSource defines the source behavior of the shell
+// It will source a file
+func builtinSource() types.Command {
+	return func(filePaths ...string) (string, error) {
+		// TODO: double check this function : GOSH_ENABLE_AUTOCOMPLETE=fals
+		for _, filePath := range filePaths {
+			file, err := os.Open(filePath)
+			if err != nil {
+				return "", fmt.Errorf("failed to open %s: %w", filePath, err)
+			}
+			defer file.Close()
+
+			scanner := bufio.NewScanner(file)
+			for scanner.Scan() {
+				line := strings.TrimSpace(scanner.Text())
+
+				if line == "" || strings.HasPrefix(line, "#") {
+					continue
+				}
+
+				// Check if it's a variable assignment (e.g., VAR=value)
+				if strings.Contains(line, "=") {
+					line = strings.Trim(line, "export")
+					line = strings.Trim(line, " ")
+
+					parts := strings.SplitN(line, "=", 2)
+					key := strings.TrimSpace(parts[0])
+					value := strings.Trim(strings.TrimSpace(parts[1]), `"'`)
+					os.Setenv(key, value)
+					continue
+				}
+
+				// Execute command if not
+				cmd := exec.Command("sh", "-c", line)
+				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
+				err := cmd.Run()
+				if err != nil {
+					fmt.Println("Error executing command:", line, err)
+				}
+			}
+
+			if err := scanner.Err(); err != nil {
+				return "", fmt.Errorf("error reading %s: %w", filePath, err)
+			}
+		}
+
+		reloadCfgChannel <- true
+
+		return "", nil
+	}
+}
+
+func builtinExport() types.Command {
+	return func() {}
+	// TODO
 }

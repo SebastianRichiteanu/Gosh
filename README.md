@@ -49,22 +49,37 @@ Note: This section is for stages 2 and beyond.
 
 
 - add config??
+~/.gosh/
+├── goshenv       → Persistent environment variables (like .zshenv)
+├── goshprofile   → Runs on login (like .zprofile)
+├── goshrc        → Runs for every interactive shell (like .zshrc)
+├── goshlogout    → Runs on shell exit (like .zlogout)
+├── history       → Stores shell history
+├── aliases       → Optional: Stores custom aliases
+├── config.yaml   → Optional: YAML-based config for extra settings
+
+
+
+
+- bug in path autocompletion, the cursor does not move
+- bug in ~ handling????
+
+- add export
 - todos
 - pipes
 - job control: fg, bg & jobs
-- alias?
+- alias? unalias?
 - persistent history?
 - variable interpolation? 
 - readme
 - run linter :) and maybe add it as make and add a conifg for it?
-- for the logger if I delete the log while the shell is running it won't create one due to the current implementation
-   - should be easy to fix, but probably create a logger component? 
+- color scheme? :D
 
 - for history: if i do up arrow a couple of times and then delete a char, should I reset the index or just go up? :hm:
    - i think I should keep the index but also can edit history
    - so for example if I delete a couple of chars from an above entry 
    - if i go up/down and again to that index the change should be there 
-
+   - also maybe MaxHistorySize?
 
 
 - tests for autocompletion!!!

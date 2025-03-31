@@ -43,8 +43,8 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 			if cursor > 0 {
 				input = append(input[:cursor-1], input[cursor:]...)
 				cursor--
-				fmt.Printf("\r$ %s \033[K", string(input))  // Clear line after cursor
-				fmt.Printf("\033[%dD", len(input)-cursor+1) // Move cursor back
+				fmt.Printf("\r%s %s \033[K", p.cfg.PromptSymbol, string(input)) // Clear line after cursor
+				fmt.Printf("\033[%dD", len(input)-cursor+1)                     // Move cursor back
 			}
 		case 9: // Tab (Autocomplete)
 			// TODO: move the below and maybe only handle runes?
@@ -119,19 +119,19 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 						p.historyIndex--
 						input = []rune(p.history[p.historyIndex])
 						cursor = len(input)
-						fmt.Printf("\r$ %s\033[K", string(input))
+						fmt.Printf("\r%s %s\033[K", p.cfg.PromptSymbol, string(input))
 					}
 				case 66: // Down Arrow
 					if p.historyIndex < len(p.history)-1 { // TODO: I think the historyIndex is broken
 						p.historyIndex++
 						input = []rune(p.history[p.historyIndex])
 						cursor = len(input)
-						fmt.Printf("\r$ %s\033[K", string(input))
+						fmt.Printf("\r%s %s\033[K", p.cfg.PromptSymbol, string(input))
 					} else if p.historyIndex == len(p.history)-1 {
 						p.historyIndex = len(p.history)
 						input = inputBkp
 						cursor = len(input)
-						fmt.Print("\r$ \033[K", string(input))
+						fmt.Print("\r%s \033[K", p.cfg.PromptSymbol, string(input))
 						inputBkp = []rune{}
 					} else {
 						fmt.Fprintf(os.Stdout, "\a")
@@ -152,7 +152,7 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 		default:
 			input = append(input[:cursor], append([]rune{char}, input[cursor:]...)...)
 			cursor++
-			fmt.Printf("\r$ %s ", string(input))
+			fmt.Printf("\r%s %s ", p.cfg.PromptSymbol, string(input))
 			fmt.Printf("\033[%dD", len(input)-cursor+1) // Move cursor back to correct position
 		}
 	}

@@ -126,8 +126,6 @@ func (l *Logger) Error(msg string, fields ...any) {
 
 // Close closes the log file
 func (l *Logger) Close() {
-	// TODO: should this be part of exit?
-
 	if l.logFile != nil {
 		l.logFile.Close()
 	}

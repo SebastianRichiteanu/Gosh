@@ -1,17 +1,20 @@
 package executor
 
 import (
+	"github.com/SebastianRichiteanu/Gosh/internal/config"
 	"github.com/SebastianRichiteanu/Gosh/internal/logger"
 	"github.com/SebastianRichiteanu/Gosh/internal/types"
 )
 
 type Executor struct {
+	cfg         *config.Config
 	builtinCmds *types.CommandMap
 	logger      *logger.Logger
 }
 
-func NewExecutor(builtinCmds *types.CommandMap, logger *logger.Logger) *Executor {
+func NewExecutor(builtinCmds *types.CommandMap, cfg *config.Config, logger *logger.Logger) *Executor {
 	return &Executor{
+		cfg:         cfg,
 		builtinCmds: builtinCmds,
 		logger:      logger,
 	}

@@ -4,17 +4,20 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/SebastianRichiteanu/Gosh/internal/config"
 	"github.com/SebastianRichiteanu/Gosh/internal/logger"
 	"github.com/SebastianRichiteanu/Gosh/internal/types"
 )
 
 type Autocompleter struct {
+	cfg         *config.Config
 	builtinCmds *types.CommandMap
 	logger      *logger.Logger
 }
 
-func NewAutocompleter(builtinCmds *types.CommandMap, logger *logger.Logger) *Autocompleter {
+func NewAutocompleter(builtinCmds *types.CommandMap, cfg *config.Config, logger *logger.Logger) *Autocompleter {
 	return &Autocompleter{
+		cfg:         cfg,
 		builtinCmds: builtinCmds,
 		logger:      logger,
 	}
@@ -23,6 +26,10 @@ func NewAutocompleter(builtinCmds *types.CommandMap, logger *logger.Logger) *Aut
 // Autocomplete generates a list of possible completions for a given prefix
 // It combines suggestions from known built-in commands and executable files in the system's PATH
 func (a *Autocompleter) Autocomplete(builtinCmds types.CommandMap, prefix string) ([]string, bool) {
+	if !a.cfg.EnableAutoComplete {
+		return nil, false
+	}
+
 	if prefix == "" {
 		return nil, false
 	}

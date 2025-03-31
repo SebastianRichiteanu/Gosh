@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/SebastianRichiteanu/Gosh/internal/autocompleter"
+	"github.com/SebastianRichiteanu/Gosh/internal/config"
 	"github.com/SebastianRichiteanu/Gosh/internal/logger"
 	"github.com/SebastianRichiteanu/Gosh/internal/types"
 )
@@ -16,28 +17,30 @@ var (
 )
 
 type Prompt struct {
+	cfg           config.Config
 	builtinCmds   *types.CommandMap
 	autocompleter *autocompleter.Autocompleter
 	logger        *logger.Logger
 
-	history       []string
-	historyIndex  int
-	promptSymbols string
+	history      []string
+	historyIndex int
 }
 
-func NewPrompt(builtinCmds *types.CommandMap, autocompleter *autocompleter.Autocompleter, logger *logger.Logger) *Prompt {
+func NewPrompt(builtinCmds *types.CommandMap, autocompleter *autocompleter.Autocompleter, cfg *config.Config, logger *logger.Logger) *Prompt {
 	return &Prompt{
+		cfg:           *cfg,
 		builtinCmds:   builtinCmds,
 		autocompleter: autocompleter,
 		logger:        logger,
 		history:       []string{},
 		historyIndex:  -1,
-		promptSymbols: "$ ", // TODO: add to config
 	}
 }
 
 func (p *Prompt) HandlePrompt(previousInput string) (types.Prompt, string, error) {
-	fmt.Print(p.promptSymbols + previousInput)
+	p.logger.Info(fmt.Sprintf("-----%#v -----", p.cfg)) // TODO: this is not getting updated.....
+
+	fmt.Print(p.cfg.PromptSymbol + " " + previousInput)
 
 	input, skipExec := p.readInput(previousInput)
 	if skipExec {
