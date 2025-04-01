@@ -43,7 +43,9 @@ Note: This section is for stages 2 and beyond.
    $ ./test.<TAB>
    test..sh  test.s
 
-
+probably split then input into tokens, get the current token(where cursor is) and autocomplete that
+   - check if it's ~
+   - check if it's a file or a dir (append / if dir)
 
 
 
@@ -62,7 +64,7 @@ Note: This section is for stages 2 and beyond.
 
 - for ctrl+c print ^C and skip line
 
-
+- -bash: cd: too many arguments
 - todos
 - pipes
 - job control: fg, bg & jobs
@@ -72,6 +74,7 @@ Note: This section is for stages 2 and beyond.
 - readme
 - run linter :) and maybe add it as make and add a conifg for it?
 - color scheme? :D
+- license?
 
 - for history: if i do up arrow a couple of times and then delete a char, should I reset the index or just go up? :hm:
    - i think I should keep the index but also can edit history

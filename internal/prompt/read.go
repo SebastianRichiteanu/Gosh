@@ -10,6 +10,22 @@ import (
 	"github.com/mattn/go-tty"
 )
 
+func (p *Prompt) renderPrompt(prompt []rune) {
+	fmt.Printf("\r%s %s\033[K", p.cfg.PromptSymbol, string(prompt))
+}
+
+func (p *Prompt) bell() {
+	fmt.Fprintf(os.Stdout, "\a")
+}
+
+func (p *Prompt) moveCursorBack(positions int) {
+	fmt.Printf("\033[%dD", positions)
+}
+
+func (p *Prompt) moveCursorFront(positions int) {
+	fmt.Printf("\033[%dC", positions)
+}
+
 func (p *Prompt) readInput(previousInput string) (string, bool) {
 	tty, err := tty.Open()
 	if err != nil {
@@ -43,43 +59,43 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 			if cursor > 0 {
 				input = append(input[:cursor-1], input[cursor:]...)
 				cursor--
-				fmt.Printf("\r%s %s \033[K", p.cfg.PromptSymbol, string(input)) // Clear line after cursor
-				fmt.Printf("\033[%dD", len(input)-cursor+1)                     // Move cursor back
+				p.renderPrompt(append(input, ' ')) // idk why tbh, but it works
+				p.moveCursorBack(len(input) - cursor + 1)
 			}
 		case 9: // Tab (Autocomplete)
 			// TODO: move the below and maybe only handle runes?
-
 			inputAsStr := string(input)
 
-			suffixes, _ := p.autocompleter.Autocomplete(*p.builtinCmds, inputAsStr)
-			if len(suffixes) == 0 {
-				fmt.Fprintf(os.Stdout, "\a")
+			currentPrompt, err := p.parseInput(inputAsStr)
+			if err != nil {
+				p.logger.Error(fmt.Sprintf("failed to parse input: %v", err), "input", inputAsStr)
+				p.bell()
 				continue
 			}
 
-			suffixAppender := " "
-
-			splitInput := inputAsStr
-			if strings.Contains(inputAsStr, " ") {
-				splitInputArr := strings.Split(inputAsStr, " ")
-				if len(splitInputArr) == 0 {
-					continue // TODO: not sure?
-				}
-
-				splitInputArr = strings.Split(splitInputArr[len(splitInputArr)-1], "/")
-
-				splitInput = splitInputArr[len(splitInputArr)-1]
-				suffixAppender = "/" // TODO: only do this if the file is a dir....
+			tokenIndex := p.findTokenIndexAtPosition(currentPrompt.Tokens, cursor)
+			tokenToAutocomplete := currentPrompt.Tokens[tokenIndex]
+			suffixes := p.autocompleter.Autocomplete(*p.builtinCmds, tokenToAutocomplete)
+			if len(suffixes) == 0 {
+				p.bell()
+				continue
 			}
 
 			if len(suffixes) == 1 {
+				// add the suffix in the prompt
+				// TODO: this will only work if we are on the last char of the token, right?
+				// Have to do the below with rerender prompt as well
+
 				suffix := suffixes[0]
+				if suffix[len(suffix)-1] != '/' {
+					suffix += " "
+				}
 
-				suffixWithAppender := suffix + suffixAppender
+				//input = append(append(input[:cursor], []rune(suffix)...), input[cursor:]...)
+				input = append(input[:cursor], append([]rune(suffix), input[cursor:]...)...)
 
-				input = append(input, []rune(suffixWithAppender)...)
-				fmt.Fprint(os.Stdout, suffix+suffixAppender)
-				cursor += len(suffixWithAppender)
+				cursor += len(suffix)
+				p.renderPrompt(input)
 
 				continue
 			}
@@ -88,21 +104,26 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 			common := utils.FindLongestPrefix(suffixes)
 			if common != "" {
 				input = append(input, []rune(common)...)
-				fmt.Fprint(os.Stdout, common)
 				cursor += len(common)
 				pressedTab = false
+
+				p.renderPrompt(input)
+
 				continue
 			}
 
 			if !pressedTab {
-				fmt.Fprintf(os.Stdout, "\a")
+				p.bell()
 				pressedTab = true
 				continue
 			}
 
+			pathToken := strings.Split(tokenToAutocomplete, "/")
+			tokenToAutocomplete = pathToken[len(pathToken)-1]
+
 			var suffixesWithInput []string
 			for _, suffix := range suffixes {
-				suffixesWithInput = append(suffixesWithInput, splitInput+suffix)
+				suffixesWithInput = append(suffixesWithInput, tokenToAutocomplete+suffix)
 			}
 
 			fmt.Fprintf(os.Stdout, "\r\n%s\n\r", strings.Join(suffixesWithInput, "  "))
@@ -121,33 +142,33 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 						p.historyIndex--
 						input = []rune(p.history[p.historyIndex])
 						cursor = len(input)
-						fmt.Printf("\r%s %s\033[K", p.cfg.PromptSymbol, string(input))
+						p.renderPrompt(input)
 					}
 				case 66: // Down Arrow
 					if p.historyIndex < len(p.history)-1 { // TODO: I think the historyIndex is broken
 						p.historyIndex++
 						input = []rune(p.history[p.historyIndex])
 						cursor = len(input)
-						fmt.Printf("\r%s %s\033[K", p.cfg.PromptSymbol, string(input))
+						p.renderPrompt(input)
 					} else if p.historyIndex == len(p.history)-1 {
 						p.historyIndex = len(p.history)
 						input = inputBkp
 						cursor = len(input)
-						fmt.Printf("\r%s %s\033[K", p.cfg.PromptSymbol, string(input))
+						p.renderPrompt(input)
 						inputBkp = []rune{}
 					} else {
-						fmt.Fprintf(os.Stdout, "\a")
+						p.bell()
 						continue
 					}
 				case 67: // Right Arrow
 					if cursor < len(input) {
 						cursor++
-						fmt.Print("\033[C")
+						p.moveCursorFront(1)
 					}
 				case 68: // Left Arrow
 					if cursor > 0 {
 						cursor--
-						fmt.Print("\033[D")
+						p.moveCursorBack(1)
 					}
 				}
 			}

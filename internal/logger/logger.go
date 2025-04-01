@@ -63,7 +63,9 @@ func (l *Logger) ensureLoggingFile() {
 	l.logFile.Close()
 	l.logFile = nil
 	// And set it again
-	l.setLoggingFile()
+	if err := l.setLoggingFile(); err != nil {
+		panic(err)
+	}
 }
 
 // shouldLog checks if a message should be logged based on the current level

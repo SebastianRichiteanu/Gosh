@@ -7,8 +7,21 @@ import (
 	"github.com/SebastianRichiteanu/Gosh/internal/utils"
 )
 
+func (p *Prompt) findTokenIndexAtPosition(tokens []string, position int) int {
+	index := 0
+	for idx, token := range tokens {
+		index += len(token)
+
+		if index >= position {
+			return idx
+		}
+	}
+
+	return len(tokens) - 1
+}
+
 // parseInput parses the user input, breaking it into tokens, handling quotes and escape characters, and detecting redirection
-func (p *Prompt) parseInput(input string) (types.Prompt, string, error) {
+func (p *Prompt) parseInput(input string) (types.Prompt, error) {
 	parsedPrompt := types.Prompt{
 		StdStream: types.DefaultStdStream,
 		Truncate:  false,
@@ -79,7 +92,7 @@ func (p *Prompt) parseInput(input string) (types.Prompt, string, error) {
 
 			parsedPrompt.StdStream, err = utils.GetStdStream(input, i-1)
 			if err != nil {
-				return parsedPrompt, "", err
+				return parsedPrompt, err
 			}
 
 			if i < len(input)-1 && input[i+1] == '>' {
@@ -89,7 +102,7 @@ func (p *Prompt) parseInput(input string) (types.Prompt, string, error) {
 				parsedPrompt.Truncate = true
 			}
 
-			return parsedPrompt, "", nil
+			return parsedPrompt, nil
 		default:
 			currentToken.WriteByte(char)
 		}
@@ -100,11 +113,11 @@ func (p *Prompt) parseInput(input string) (types.Prompt, string, error) {
 	}
 
 	if inSingleQuote {
-		return parsedPrompt, "", errUnterminatedSingleQuote
+		return parsedPrompt, errUnterminatedSingleQuote
 	}
 	if inDoubleQuote {
-		return parsedPrompt, "", errUnterminatedDoubleQuote
+		return parsedPrompt, errUnterminatedDoubleQuote
 	}
 
-	return parsedPrompt, "", nil
+	return parsedPrompt, nil
 }

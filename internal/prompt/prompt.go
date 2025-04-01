@@ -45,5 +45,7 @@ func (p *Prompt) HandlePrompt(previousInput string) (types.Prompt, string, error
 		return types.Prompt{}, input, nil
 	}
 
-	return p.parseInput(strings.TrimSpace(input))
+	prompt, err := p.parseInput(strings.TrimSpace(input))
+
+	return prompt, "", err
 }

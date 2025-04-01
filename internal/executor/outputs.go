@@ -30,14 +30,18 @@ func (e *Executor) handleFileOutput(prompt types.Prompt, stdout, stderr reflect.
 
 	switch prompt.StdStream {
 	case types.Stdout:
-		file.WriteString(stdout.String())
+		if _, err := file.WriteString(stdout.String()); err != nil {
+			e.logger.Error(fmt.Sprintf("failed to write string for stdout: %v", err))
+		}
 		if !stderr.IsNil() {
 			fmt.Println(stderr)
 		}
 	case types.Stderr:
 		fmt.Print(stdout)
 		if !stderr.IsNil() {
-			file.WriteString(stderr.String())
+			if _, err := file.WriteString(stderr.String()); err != nil {
+				e.logger.Error(fmt.Sprintf("failed to write string for stderr: %v", err))
+			}
 		}
 	default:
 		panic(errors.New("wtf?"))
