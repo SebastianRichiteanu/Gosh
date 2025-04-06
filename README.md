@@ -50,17 +50,9 @@ probably split then input into tokens, get the current token(where cursor is) an
 
 
 
-- add config??
-~/.gosh/
-├── goshrc        → Runs for every interactive shell (like .zshrc)
-├── goshlogout    → Runs on shell exit (like .zlogout)
-├── history       → Stores shell history
-├── aliases       → Stores custom aliases
 
 
 
-
-- bug in ~ handling????
 
 - for ctrl+c print ^C and skip line
 

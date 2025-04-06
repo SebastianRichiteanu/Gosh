@@ -190,6 +190,7 @@ func TestShell(t *testing.T) {
 
 		// TODO: create tests for autocompletion
 		// TODO: create tests for history (up/down arrow)
+		// TODO: this are directly testing the shell, should I test the functions instead for better consistency?
 	}
 
 	for _, test := range tests {

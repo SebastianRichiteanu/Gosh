@@ -58,7 +58,19 @@ func ExpandHomePath(path string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return filepath.Join(homeDir, path[1:]), nil
+
+		// Check if original path ends with a slash
+		hasTrailingSlash := strings.HasSuffix(path, string(os.PathSeparator))
+
+		// Join path segments
+		expandedPath := filepath.Join(homeDir, path[1:])
+
+		// Re-add trailing slash if it was present
+		if hasTrailingSlash && !strings.HasSuffix(expandedPath, string(os.PathSeparator)) {
+			expandedPath += string(os.PathSeparator)
+		}
+
+		return expandedPath, nil
 	}
 	return path, nil
 }
