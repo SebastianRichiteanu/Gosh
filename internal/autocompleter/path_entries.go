@@ -3,7 +3,6 @@ package autocompleter
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -13,51 +12,46 @@ import (
 func (a *Autocompleter) autoCompletePathEntries(prefix string) []string {
 	var pathSuffixes []string
 
-	var relPath string
-	var err error
-
-	prefix, err = utils.ExpandHomePath(prefix)
+	expandedPrefix, err := utils.ExpandHomePath(prefix)
 	if err != nil {
 		a.logger.Warn(fmt.Sprintf("failed to expand home path: %v", err), "prefix", prefix)
+		expandedPrefix = prefix
 	}
 
-	if strings.Contains(prefix, "./") {
-		relPath, err = os.Getwd()
-		if err != nil {
-			a.logger.Warn(fmt.Sprintf("failed to get working dir: %v", err), "prefix", prefix)
+	var (
+		dirToRead  string
+		basePrefix string
+	)
+
+	info, err := os.Stat(expandedPrefix)
+	if err == nil && info.IsDir() {
+		// If input is a directory and doesn't end with a slash, just return "/"
+		if !strings.HasSuffix(prefix, "/") {
+			// TODO: this should only happen if the pathsuffixes == 1, eg /mnt/d/Programming/C (C | C++)
+			return []string{"/"}
 		}
 
-		prefix = strings.Trim(prefix, "./")
+		// if it ends with a slash, list contents
+		dirToRead = expandedPrefix
 	} else {
-		relPath = path.Dir(prefix)
+		dirToRead = filepath.Dir(expandedPrefix)
+		basePrefix = filepath.Base(expandedPrefix)
 	}
 
-	files, err := os.ReadDir(relPath)
+	files, err := os.ReadDir(dirToRead)
 	if err != nil {
-		a.logger.Error(fmt.Sprintf("failed to read dir: %v", err), "path", relPath)
+		a.logger.Error(fmt.Sprintf("failed to read dir: %v", err), "path", dirToRead)
 		return pathSuffixes
 	}
 
-	relevantPrefix := prefix[strings.LastIndex(prefix, "/")+1:]
-
 	for _, file := range files {
-		after, found := strings.CutPrefix(file.Name(), relevantPrefix)
-		if found {
-			afterArr := strings.Split(after, "/")
-			after = afterArr[len(afterArr)-1]
-
-			fullPath := filepath.Join(relPath, file.Name())
-			info, err := os.Stat(fullPath)
-			if err != nil {
-				a.logger.Error(fmt.Sprintf("failed to stat file: %v", err), "path", fullPath)
-				continue
+		name := file.Name()
+		if strings.HasPrefix(name, basePrefix) {
+			suffix := strings.TrimPrefix(name, basePrefix)
+			if file.IsDir() {
+				suffix += "/"
 			}
-
-			if info.IsDir() {
-				pathSuffixes = append(pathSuffixes, after+"/")
-			} else {
-				pathSuffixes = append(pathSuffixes, after)
-			}
+			pathSuffixes = append(pathSuffixes, suffix)
 		}
 	}
 

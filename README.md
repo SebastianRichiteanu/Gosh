@@ -37,42 +37,34 @@ Note: This section is for stages 2 and beyond.
 
 # TODO
 
-- autocomplete still broken for some stuff, really need to implement it better:
-   $ ls
-   test.sh
-   $ ./test.<TAB>
-   test..sh  test.s
+- bug with input trailing spaces, to reproduce:
+   - input: ls /mnt/d/Progra /mnt
+   - move cursor: ls /mnt/d/Prog|ra /mnt
+   - hit tab, it autocomplets:  cd /mnt/d/Programming/| /mnt
+   - but the input now has 2 trailing spaces (2 from the difForTokenEnd): cd /mnt/d/Programming/ /mnt__
 
-probably split then input into tokens, get the current token(where cursor is) and autocomplete that
-   - check if it's ~
-   - check if it's a file or a dir (append / if dir)
 
+- for ctrl+c print ^C and skip line?
 
 
 
-
-
-
-
-- for ctrl+c print ^C and skip line
-
-- -bash: cd: too many arguments
-- todos
 - pipes
 - job control: fg, bg & jobs
 - alias? unalias?
 - persistent history?
 - variable interpolation? 
 - readme
-- run linter :) and maybe add it as make and add a conifg for it?
+
 - color scheme? :D
 - license?
+
 
 - for history: if i do up arrow a couple of times and then delete a char, should I reset the index or just go up? :hm:
    - i think I should keep the index but also can edit history
    - so for example if I delete a couple of chars from an above entry 
    - if i go up/down and again to that index the change should be there 
    - also maybe MaxHistorySize?
+
 
 
 - tests for autocompletion!!!

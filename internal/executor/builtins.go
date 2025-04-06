@@ -37,10 +37,14 @@ func (e *Executor) runBuiltin(cmd types.Command, prompt types.Prompt) []reflect.
 	isVariadic := fctType.IsVariadic()
 
 	if (!isVariadic && numIn != len(args)) || (isVariadic && len(args) < numIn-1) {
-		// Return 2 streams, first for stdout and then for stderr
+		expected := fmt.Sprintf("%d", numIn)
+		if isVariadic {
+			expected = fmt.Sprintf("at least %d", numIn-1)
+		}
+		errMsg := fmt.Sprintf("error: wrong number of arguments (expected %s, got %d)", expected, len(args))
 		return []reflect.Value{
 			reflect.ValueOf(""),
-			reflect.ValueOf(fmt.Sprintf("%s is not a callable function", cmd)),
+			reflect.ValueOf(errMsg),
 		}
 	}
 

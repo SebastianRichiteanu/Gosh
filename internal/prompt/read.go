@@ -19,10 +19,18 @@ func (p *Prompt) bell() {
 }
 
 func (p *Prompt) moveCursorBack(positions int) {
+	if positions <= 0 {
+		return
+	}
+
 	fmt.Printf("\033[%dD", positions)
 }
 
 func (p *Prompt) moveCursorFront(positions int) {
+	if positions <= 0 {
+		return
+	}
+
 	fmt.Printf("\033[%dC", positions)
 }
 
@@ -73,7 +81,7 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 				continue
 			}
 
-			tokenIndex := p.findTokenIndexAtPosition(currentPrompt.Tokens, cursor)
+			tokenIndex := p.findTokenIndexAtPosition(currentPrompt.Tokens, cursor-1)
 			tokenToAutocomplete := currentPrompt.Tokens[tokenIndex]
 			suffixes := p.autocompleter.Autocomplete(*p.builtinCmds, tokenToAutocomplete)
 			if len(suffixes) == 0 {
@@ -83,19 +91,31 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 
 			if len(suffixes) == 1 {
 				// add the suffix in the prompt
-				// TODO: this will only work if we are on the last char of the token, right?
-				// Have to do the below with rerender prompt as well
 
 				suffix := suffixes[0]
 				if suffix[len(suffix)-1] != '/' {
 					suffix += " "
 				}
 
-				//input = append(append(input[:cursor], []rune(suffix)...), input[cursor:]...)
-				input = append(input[:cursor], append([]rune(suffix), input[cursor:]...)...)
+				// check if we are inside token
+
+				cursorAfterToken := cursor
+				for cursorAfterToken < len(input) {
+					currentCursorChar := input[cursorAfterToken]
+					if currentCursorChar == ' ' {
+						break
+					}
+					cursorAfterToken++
+				}
+
+				input = append(input[:cursorAfterToken], append([]rune(suffix), input[cursorAfterToken:]...)...)
+
+				difForTokenEnd := cursorAfterToken - cursor
 
 				cursor += len(suffix)
 				p.renderPrompt(input)
+
+				p.moveCursorBack(len(input) - cursor - difForTokenEnd)
 
 				continue
 			}
@@ -118,8 +138,12 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 				continue
 			}
 
-			pathToken := strings.Split(tokenToAutocomplete, "/")
-			tokenToAutocomplete = pathToken[len(pathToken)-1]
+			if tokenToAutocomplete[len(tokenToAutocomplete)-1] == '/' {
+				tokenToAutocomplete = ""
+			} else {
+				pathToken := strings.Split(tokenToAutocomplete, "/")
+				tokenToAutocomplete = pathToken[len(pathToken)-1]
+			}
 
 			var suffixesWithInput []string
 			for _, suffix := range suffixes {
@@ -145,7 +169,7 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 						p.renderPrompt(input)
 					}
 				case 66: // Down Arrow
-					if p.historyIndex < len(p.history)-1 { // TODO: I think the historyIndex is broken
+					if p.historyIndex < len(p.history)-1 {
 						p.historyIndex++
 						input = []rune(p.history[p.historyIndex])
 						cursor = len(input)

@@ -11,12 +11,19 @@ import (
 
 // handleDirectOutput prints the command's stdout or stderr directly to the terminal
 func (e *Executor) handleDirectOutput(stdout, stderr reflect.Value) {
-	if stderr.IsNil() {
+	if stderr.Kind() == reflect.Interface && stderr.IsNil() {
 		fmt.Printf("%s", stdout.String())
 		return
 	}
-	val := stderr.Interface()
-	fmt.Printf("%s\n", val.(error))
+
+	if stderr.Type().Implements(reflect.TypeOf((*error)(nil)).Elem()) {
+		errVal := stderr.Interface().(error)
+		fmt.Printf("%s\n", errVal.Error())
+		return
+	}
+
+	// fallback: stderr is not nil and not an error, print as string
+	fmt.Printf("%s\n", stderr.String())
 }
 
 // handleFileOutput handles redirecting command output to a file based on the prompt's redirection

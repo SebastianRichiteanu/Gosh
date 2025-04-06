@@ -27,7 +27,8 @@ func FindPath(cmd string) string {
 		cmd = cmd[1:]
 		currentDir, err := os.Getwd()
 		if err != nil {
-			return "" // TODO: treat error? maybe once I add debug
+			fmt.Printf("failed to get current directory: %v", err)
+			return ""
 		}
 
 		fp := filepath.Join(currentDir, cmd)

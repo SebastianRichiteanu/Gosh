@@ -22,6 +22,17 @@ func (e *Executor) execBinary(prompt types.Prompt) {
 		return
 	}
 
+	for idx, arg := range args {
+		if arg[0] == '~' {
+			fullArg, err := utils.ExpandHomePath(arg)
+			if err != nil {
+				continue
+			}
+
+			args[idx] = fullArg
+		}
+	}
+
 	cmd := exec.Command(binary, args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout

@@ -41,7 +41,9 @@ func NewConfig(reloadCfgChannel chan bool) (*Config, error) {
 		return nil, err
 	}
 
-	cfg.Update()
+	if err := cfg.Update(); err != nil {
+		return nil, fmt.Errorf("failed to update config: %v", err)
+	}
 
 	go cfg.listenRefreshChan()
 
@@ -50,8 +52,11 @@ func NewConfig(reloadCfgChannel chan bool) (*Config, error) {
 
 func (c *Config) listenRefreshChan() {
 	for {
-		_ = <-c.reloadCfgChannel
-		_ = c.Update() // TODO: treat error?
+		<-c.reloadCfgChannel
+		err := c.Update()
+		if err != nil {
+			fmt.Printf("failed to refresh config: %v", err)
+		}
 	}
 }
 

@@ -103,7 +103,7 @@ func (l *Logger) logMessage(level, message string, fields []any) {
 
 	l.ensureLoggingFile()
 
-	log.Println(fmt.Sprintf("[%s] %s%s", level, message, formatFields(fields)))
+	log.Printf("[%s] %s%s", level, message, formatFields(fields))
 }
 
 // Info logs an info message

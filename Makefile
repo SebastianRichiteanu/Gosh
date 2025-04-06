@@ -17,3 +17,7 @@ test:
 	@echo "🗑️  Cleaning up..."
 	@rm -rf $(TEST_TMP_PATH)
 	@echo "✅ Cleanup complete!"
+
+lint:
+	@echo "🔍 Running golangci-lint..."
+	@golangci-lint run ./...
