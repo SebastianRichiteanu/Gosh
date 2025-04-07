@@ -37,8 +37,6 @@ Note: This section is for stages 2 and beyond.
 
 # TODO
 
-- ctrl + backspace?
-
 - pipes
 - job control: fg, bg & jobs
 - alias? unalias?

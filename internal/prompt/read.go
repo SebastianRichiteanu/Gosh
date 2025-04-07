@@ -24,6 +24,7 @@ func (p *Prompt) readRunes() {
 				p.errChan <- err
 				return
 			}
+
 			if r2 != runeBracket { // Not a control sequence
 				p.runeChan <- r
 				p.runeChan <- r2
@@ -107,6 +108,32 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 					input = append(input[:cursor-1], input[cursor:]...)
 					cursor--
 					editedHistory = true
+					p.renderPrompt(append(input, ' '))
+					p.moveCursorBack(len(input) - cursor + 1)
+				}
+			case runeCtrlBackspace:
+				if cursor > 0 {
+					// Find the start of the previous word
+					start := cursor - 1
+					for start > 0 {
+						if input[start] == ' ' ||
+							input[start] == '\t' ||
+							input[start] == '\n' ||
+							input[start] == '\r' ||
+							input[start] == '\v' ||
+							input[start] == '\f' ||
+							input[start] == '\a' ||
+							input[start] == '\b' ||
+							input[start] == '/' {
+							break
+						}
+						start--
+					}
+
+					input = append(input[:start], input[cursor:]...)
+					cursor = start
+					editedHistory = true
+
 					p.renderPrompt(append(input, ' '))
 					p.moveCursorBack(len(input) - cursor + 1)
 				}
