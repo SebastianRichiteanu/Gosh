@@ -61,9 +61,15 @@ func (p *Prompt) readRunes() {
 func (p *Prompt) readInput(previousInput string) (string, bool) {
 	input := []rune(previousInput)
 	inputBkp := []rune{}
+	editedHistory := false // Track if the current history entry was edited
 
 	cursor := len(previousInput)
 	pressedTab := false
+
+	// Ensure historyIndex is valid
+	if p.historyIndex < 0 || p.historyIndex > len(p.history) {
+		p.historyIndex = len(p.history)
+	}
 
 	for {
 		select {
@@ -82,7 +88,17 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 			case runeEnter:
 				fmt.Println()
 				if len(input) > 0 {
-					p.history = append(p.history, string(input))
+					// Save the edited history entry or add a new one
+					if editedHistory && p.historyIndex < len(p.history) {
+						p.history[p.historyIndex] = string(input)
+					} else {
+						p.history = append(p.history, string(input))
+					}
+
+					// Enforce MaxHistorySize
+					if len(p.history) > p.cfg.MaxHistorySize {
+						p.history = p.history[1:]
+					}
 				}
 				p.historyIndex = len(p.history)
 				return string(input), false
@@ -90,11 +106,12 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 				if cursor > 0 {
 					input = append(input[:cursor-1], input[cursor:]...)
 					cursor--
-					p.renderPrompt(append(input, ' ')) // idk why tbh, but it works
+					editedHistory = true
+					p.renderPrompt(append(input, ' '))
 					p.moveCursorBack(len(input) - cursor + 1)
 				}
 			case runeTab:
-				// TODO: move the below and maybe only handle runes?
+				// Handle autocompletion logic
 				inputAsStr := string(input)
 
 				currentPrompt, err := p.parseInput(inputAsStr)
@@ -113,15 +130,13 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 				}
 
 				if len(suffixes) == 1 {
-					// add the suffix in the prompt
-
+					// Add the suffix in the prompt
 					suffix := suffixes[0]
 					if len(suffix) > 0 && suffix[len(suffix)-1] != '/' {
 						suffix += " "
 					}
 
-					// check if we are inside token
-
+					// Check if we are inside a token
 					cursorAfterToken := cursor
 					for cursorAfterToken < len(input) {
 						currentCursorChar := input[cursorAfterToken]
@@ -132,18 +147,16 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 					}
 
 					input = append(input[:cursorAfterToken], append([]rune(suffix), input[cursorAfterToken:]...)...)
-
 					difForTokenEnd := cursorAfterToken - cursor
 
 					cursor += len(suffix)
 					p.renderPrompt(input)
 
 					p.moveCursorBack(len(input) - cursor - difForTokenEnd)
-
 					continue
 				}
 
-				// 2 or more suffixes
+				// Handle multiple suffixes
 				common := utils.FindLongestPrefix(suffixes)
 				if common != "" {
 					input = append(input, []rune(common)...)
@@ -151,7 +164,6 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 					pressedTab = false
 
 					p.renderPrompt(input)
-
 					continue
 				}
 
@@ -176,9 +188,14 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 				fmt.Fprintf(os.Stdout, "\r\n%s\n\r", strings.Join(suffixesWithInput, "  "))
 				pressedTab = false
 
-				return string(input), true // return true so we don't exec
+				return string(input), true // Return true so we don't execute
 			case myRuneArrowUp:
 				if p.historyIndex > 0 {
+					if editedHistory && p.historyIndex < len(p.history) {
+						p.history[p.historyIndex] = string(input)
+						editedHistory = false
+					}
+
 					if p.historyIndex == len(p.history) {
 						inputBkp = input
 					}
@@ -187,9 +204,17 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 					input = []rune(p.history[p.historyIndex])
 					cursor = len(input)
 					p.renderPrompt(input)
+				} else {
+					p.bell()
 				}
+
 			case myRuneArrowDown:
 				if p.historyIndex < len(p.history)-1 {
+					if editedHistory && p.historyIndex < len(p.history) {
+						p.history[p.historyIndex] = string(input)
+						editedHistory = false
+					}
+
 					p.historyIndex++
 					input = []rune(p.history[p.historyIndex])
 					cursor = len(input)
@@ -202,7 +227,6 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 					inputBkp = []rune{}
 				} else {
 					p.bell()
-					continue
 				}
 			case myRuneArrowRight:
 				if cursor < len(input) {
@@ -217,8 +241,9 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 			default:
 				input = append(input[:cursor], append([]rune{char}, input[cursor:]...)...)
 				cursor++
+				editedHistory = true
 				fmt.Printf("\r%s %s ", p.cfg.PromptSymbol, string(input))
-				fmt.Printf("\033[%dD", len(input)-cursor+1) // Move cursor back to correct position
+				fmt.Printf("\033[%dD", len(input)-cursor+1)
 			}
 		}
 	}

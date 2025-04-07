@@ -49,20 +49,16 @@ Note: This section is for stages 2 and beyond.
 - color scheme? :D
 - license?
 
+- tests:
+   - autocompletion:
+      Builtin completion
+      Completion with arguments
+      Missing completions
+      Executable completion
+      Multiple completions
+      Partial completions
+   - history
+   - ?
 
-- for history: if i do up arrow a couple of times and then delete a char, should I reset the index or just go up? :hm:
-   - i think I should keep the index but also can edit history
-   - so for example if I delete a couple of chars from an above entry 
-   - if i go up/down and again to that index the change should be there 
-   - also maybe MaxHistorySize?
 
-
-
-- tests for autocompletion!!!
-   Builtin completion
-   Completion with arguments
-   Missing completions
-   Executable completion
-   Multiple completions
-   Partial completions
 

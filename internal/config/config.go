@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/SebastianRichiteanu/Gosh/internal/utils"
 )
@@ -13,6 +14,7 @@ type Config struct {
 	LogLevel           string
 	LogFile            string
 	HistoryFile        string
+	MaxHistorySize     int
 	EnableAutoComplete bool
 	GoshHomePath       string
 
@@ -25,6 +27,7 @@ func NewConfig(reloadCfgChannel chan bool) (*Config, error) {
 		LogLevel:           defaultLogLevel,
 		LogFile:            defaultLogFile,
 		HistoryFile:        defaultHistoryFile,
+		MaxHistorySize:     defaultMaxHistorySize,
 		EnableAutoComplete: defaultEnableAutoComplete,
 		GoshHomePath:       defaultGoshHomePath,
 
@@ -89,6 +92,13 @@ func (c *Config) Update() error {
 	}
 	if envHistoryFile, exists := os.LookupEnv(envVarHistoryFile); exists {
 		c.HistoryFile = envHistoryFile
+	}
+	if envMaxHistorySize, exists := os.LookupEnv(envVarMaxHistorySize); exists {
+		if maxHistorySize, err := strconv.Atoi(envMaxHistorySize); err == nil {
+			c.MaxHistorySize = maxHistorySize
+		} else {
+			return fmt.Errorf("invalid value for MaxHistorySize: %v", err)
+		}
 	}
 	if envAutoComplete, exists := os.LookupEnv(envVarEnableAutoComplete); exists {
 		c.EnableAutoComplete = envAutoComplete == "true"

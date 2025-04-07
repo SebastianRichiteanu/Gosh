@@ -5,10 +5,11 @@ const (
 	defaultLogLevel           = "INFO"
 	defaultEnableAutoComplete = true
 
-	defaultGoshHomePath = "~/.gosh"
-	defaultLogFile      = "gosh.log"
-	defaultHistoryFile  = "history"
-	defaultGoshrcFile   = "goshrc"
+	defaultGoshHomePath   = "~/.gosh"
+	defaultLogFile        = "gosh.log"
+	defaultHistoryFile    = "history"
+	defaultMaxHistorySize = 1000
+	defaultGoshrcFile     = "goshrc"
 )
 
 const (
@@ -17,5 +18,6 @@ const (
 	envVarEnableAutoComplete = "GOSH_ENABLE_AUTOCOMPLETE"
 	envVarLogFile            = "GOSH_LOG_FILE"
 	envVarHistoryFile        = "GOSH_HISTORY_FILE"
+	envVarMaxHistorySize     = "GOSH_MAX_HISTORY_SIZE"
 	envVarGoshHomePath       = "GOSH_CONFIG_HOME"
 )
