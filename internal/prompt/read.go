@@ -135,10 +135,10 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 
 					difForTokenEnd := cursorAfterToken - cursor
 
-					cursor += len(suffix) + difForTokenEnd
+					cursor += len(suffix)
 					p.renderPrompt(input)
 
-					p.moveCursorBack(len(input) - cursor)
+					p.moveCursorBack(len(input) - cursor - difForTokenEnd)
 
 					continue
 				}
