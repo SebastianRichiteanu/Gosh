@@ -41,6 +41,13 @@ func NewLogger(logFilePath, logLevel string) (*Logger, error) {
 	return &logger, nil
 }
 
+// Close closes the log file
+func (l *Logger) Close() {
+	if l.logFile != nil {
+		l.logFile.Close()
+	}
+}
+
 func (l *Logger) setLoggingFile() error {
 	var err error
 	l.logFile, err = os.OpenFile(l.logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -124,11 +131,4 @@ func (l *Logger) Warn(msg string, fields ...any) {
 // Error logs an error message
 func (l *Logger) Error(msg string, fields ...any) {
 	l.logMessage(LevelError, msg, fields)
-}
-
-// Close closes the log file
-func (l *Logger) Close() {
-	if l.logFile != nil {
-		l.logFile.Close()
-	}
 }

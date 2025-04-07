@@ -50,6 +50,10 @@ func NewConfig(reloadCfgChannel chan bool) (*Config, error) {
 	return &cfg, nil
 }
 
+func (c *Config) Close() {
+	close(c.reloadCfgChannel)
+}
+
 func (c *Config) listenRefreshChan() {
 	for {
 		<-c.reloadCfgChannel

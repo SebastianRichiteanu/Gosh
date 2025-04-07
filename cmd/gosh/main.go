@@ -6,37 +6,55 @@ import (
 
 	"github.com/SebastianRichiteanu/Gosh/internal/autocompleter"
 	"github.com/SebastianRichiteanu/Gosh/internal/builtins"
+	"github.com/SebastianRichiteanu/Gosh/internal/closer"
 	"github.com/SebastianRichiteanu/Gosh/internal/config"
 	"github.com/SebastianRichiteanu/Gosh/internal/executor"
 	"github.com/SebastianRichiteanu/Gosh/internal/logger"
 	"github.com/SebastianRichiteanu/Gosh/internal/prompt"
-	"github.com/SebastianRichiteanu/Gosh/internal/utils"
 )
 
 func main() {
-	builtinCmds, reloadCfgChannel := builtins.InitBuiltinCmds()
+	exitCode := run()
+	os.Exit(exitCode)
+}
+
+func run() int {
+	exitChannel := make(chan int, 1)
+	builtinCmds, reloadCfgChannel := builtins.InitBuiltinCmds(exitChannel)
 
 	cfg, err := config.NewConfig(reloadCfgChannel)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to initialize conifg: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Failed to initialize config: %v\n", err)
+		return 1
 	}
 
-	logger, err := logger.NewLogger(cfg.LogFile, cfg.LogLevel)
+	log, err := logger.NewLogger(cfg.LogFile, cfg.LogLevel)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to initialize logger: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
 
-	autoCompleter := autocompleter.NewAutocompleter(&builtinCmds, cfg, logger)
-	prompt := prompt.NewPrompt(&builtinCmds, autoCompleter, cfg, logger)
-	executor := executor.NewExecutor(&builtinCmds, cfg, logger)
+	ac := autocompleter.NewAutocompleter(&builtinCmds, cfg, log)
+	exec := executor.NewExecutor(&builtinCmds, cfg, log)
 
-	utils.BlockCtrlC()
+	pr, err := prompt.NewPrompt(&builtinCmds, ac, cfg, log)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to initialize prompt: %v\n", err)
+		return 1
+	}
 
+	c := closer.NewCloser(exitChannel, pr, cfg, log)
+	defer c.Recover()
+	go c.ListenForSignals()
+
+	return runShellLoop(pr, exec)
+}
+
+func runShellLoop(pr *prompt.Prompt, exec *executor.Executor) int {
 	var previousInput string
 
 	for {
-		prompt, newInput, err := prompt.HandlePrompt(previousInput)
+		cmd, newInput, err := pr.HandlePrompt(previousInput)
 		if err != nil {
 			panic(err)
 		}
@@ -48,6 +66,6 @@ func main() {
 			previousInput = ""
 		}
 
-		executor.Execute(prompt)
+		exec.Execute(cmd)
 	}
 }

@@ -29,10 +29,10 @@ var builtinCmds types.CommandMap = make(types.CommandMap)
 var reloadCfgChannel chan bool = make(chan bool)
 
 // InitBuiltinCmds initializes all built-in commands and stores them in a CommandMap for easy lookup
-func InitBuiltinCmds() (types.CommandMap, chan bool) {
+func InitBuiltinCmds(exitChannel chan int) (types.CommandMap, chan bool) {
 	// All fct ret are (string, error) for now at least
 
-	builtinCmds[BuiltinExit] = builtinExit()
+	builtinCmds[BuiltinExit] = builtinExit(exitChannel)
 	builtinCmds[BuiltinEcho] = builtinEcho()
 	builtinCmds[BuiltinPwd] = builtinPwd()
 	builtinCmds[BuiltinCd] = builtinCd()
@@ -46,10 +46,11 @@ func InitBuiltinCmds() (types.CommandMap, chan bool) {
 
 // builtinExit defines the exit behavior of the shell
 // It terminates the program with an optional exit code
-func builtinExit() types.Command {
+func builtinExit(exitChannel chan int) types.Command {
 	return func(code ...string) (string, error) {
 		if len(code) == 0 {
-			utils.ExitShell(0)
+			exitChannel <- 0
+			return "", nil
 		}
 
 		codeAsInt, err := strconv.Atoi(code[0])
@@ -57,7 +58,7 @@ func builtinExit() types.Command {
 			return "", err
 		}
 
-		utils.ExitShell(codeAsInt)
+		exitChannel <- codeAsInt
 		return "", nil
 	}
 }
