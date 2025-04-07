@@ -116,7 +116,7 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 					// add the suffix in the prompt
 
 					suffix := suffixes[0]
-					if suffix[len(suffix)-1] != '/' {
+					if len(suffix) > 0 && suffix[len(suffix)-1] != '/' {
 						suffix += " "
 					}
 
@@ -135,10 +135,10 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 
 					difForTokenEnd := cursorAfterToken - cursor
 
-					cursor += len(suffix)
+					cursor += len(suffix) + difForTokenEnd
 					p.renderPrompt(input)
 
-					p.moveCursorBack(len(input) - cursor - difForTokenEnd)
+					p.moveCursorBack(len(input) - cursor)
 
 					continue
 				}

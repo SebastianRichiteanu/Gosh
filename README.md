@@ -37,16 +37,7 @@ Note: This section is for stages 2 and beyond.
 
 # TODO
 
-- bug with input trailing spaces, to reproduce:
-   - input: ls /mnt/d/Progra /mnt
-   - move cursor: ls /mnt/d/Prog|ra /mnt
-   - hit tab, it autocomplets:  cd /mnt/d/Programming/| /mnt
-   - but the input now has 2 trailing spaces (2 from the difForTokenEnd): cd /mnt/d/Programming/ /mnt__
-
-
-- for ctrl+c print ^C and skip line?
-
-
+- ctrl + backspace?
 
 - pipes
 - job control: fg, bg & jobs
