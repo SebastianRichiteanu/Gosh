@@ -62,6 +62,10 @@ func NewPrompt(builtinCmds *types.CommandMap, autocompleter *autocompleter.Autoc
 	// listen for SIGINT (Ctrl+C)
 	signal.Notify(p.osSignalsChan, syscall.SIGINT)
 
+	if err := p.loadHistory(); err != nil {
+		return nil, fmt.Errorf("failed to load history: %v", err)
+	}
+
 	// listen for input
 	go p.readRunes()
 

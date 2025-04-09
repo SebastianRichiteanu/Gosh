@@ -89,16 +89,25 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 			case runeEnter:
 				fmt.Println()
 				if len(input) > 0 {
-					// Save the edited history entry or add a new one
+					var writeErr error
+					cmd := string(input)
+
 					if editedHistory && p.historyIndex < len(p.history) {
-						p.history[p.historyIndex] = string(input)
+						p.history[p.historyIndex] = cmd
+						writeErr = p.appendToHistoryFile(cmd)
 					} else {
-						p.history = append(p.history, string(input))
+						p.history = append(p.history, cmd)
+
+						if len(p.history) > p.cfg.MaxHistorySize {
+							p.history = p.history[len(p.history)-p.cfg.MaxHistorySize:]
+							writeErr = p.rewriteHistoryFile(p.history)
+						} else {
+							writeErr = p.appendToHistoryFile(cmd)
+						}
 					}
 
-					// Enforce MaxHistorySize
-					if len(p.history) > p.cfg.MaxHistorySize {
-						p.history = p.history[1:]
+					if writeErr != nil {
+						p.logger.Error(fmt.Sprintf("failed to append or write to history file: %v", writeErr))
 					}
 				}
 				p.historyIndex = len(p.history)
@@ -221,6 +230,10 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 					if editedHistory && p.historyIndex < len(p.history) {
 						p.history[p.historyIndex] = string(input)
 						editedHistory = false
+
+						if err := p.rewriteHistoryFile(p.history); err != nil {
+							p.logger.Error(fmt.Sprintf("failed to rewrite history file: %v", err))
+						}
 					}
 
 					if p.historyIndex == len(p.history) {
@@ -240,6 +253,10 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 					if editedHistory && p.historyIndex < len(p.history) {
 						p.history[p.historyIndex] = string(input)
 						editedHistory = false
+
+						if err := p.rewriteHistoryFile(p.history); err != nil {
+							p.logger.Error(fmt.Sprintf("failed to rewrite history file: %v", err))
+						}
 					}
 
 					p.historyIndex++

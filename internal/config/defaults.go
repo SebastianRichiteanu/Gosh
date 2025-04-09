@@ -8,7 +8,7 @@ const (
 	defaultGoshHomePath   = "~/.gosh"
 	defaultLogFile        = "gosh.log"
 	defaultHistoryFile    = "history"
-	defaultMaxHistorySize = 1000
+	defaultMaxHistorySize = 10
 	defaultGoshrcFile     = "goshrc"
 )
 

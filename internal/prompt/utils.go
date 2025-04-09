@@ -3,6 +3,7 @@ package prompt
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 func (p *Prompt) renderPrompt(prompt []rune) {

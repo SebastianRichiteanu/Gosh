@@ -5,7 +5,6 @@
 - pipes
 - job control: fg, bg & jobs
 - alias? unalias?
-- persistent history? (history command + HISTFILE + HISTSIZE)
 - tests:
    - autocompletion:
       Builtin completion
@@ -19,6 +18,7 @@
 
 ## Nice to Have
 
+- history command
 - support for ctrl+left/right arrow?
 - support for temporary var assignment, eg: var TEST='123' echo $TEST
 - support autocompletion for env vars
@@ -36,6 +36,9 @@ To reproduce:
    - prompt "ls + <ENTER>"
    - "ls: not found"
 
+Also happens with "nano", probably something to do with the shell
+
 ### ^C on shell exit sometimes
 
 The number is arbitray, not sure where is it coming from for now
+- DisableRawMode()/EnableRawMode()
