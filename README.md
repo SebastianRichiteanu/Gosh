@@ -6,7 +6,6 @@
 - job control: fg, bg & jobs
 - alias? unalias?
 - persistent history? (history command + HISTFILE + HISTSIZE)
-- variable interpolation? (${})
 - tests:
    - autocompletion:
       Builtin completion
@@ -21,6 +20,8 @@
 ## Nice to Have
 
 - support for ctrl+left/right arrow?
+- support for temporary var assignment, eg: var TEST='123' echo $TEST
+- support autocompletion for env vars
 - readme
 - color scheme? :D
 
@@ -28,11 +29,11 @@
 
 ### Command not found after vi
 
-To reporduce:
+To reproduce:
    - open shell
    - vi random_file
-   - write + save & exit
-   - try "ls"
+   - write something + save & exit
+   - prompt "ls + <ENTER>"
    - "ls: not found"
 
 ### ^C on shell exit sometimes

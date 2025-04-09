@@ -1,6 +1,7 @@
 package prompt
 
 import (
+	"os"
 	"strings"
 
 	"github.com/SebastianRichiteanu/Gosh/internal/types"
@@ -103,6 +104,37 @@ func (p *Prompt) parseInput(input string) (types.ParsedPrompt, error) {
 			}
 
 			return parsedPrompt, nil
+		case '$':
+			if inSingleQuote || inDoubleQuote {
+				currentToken.WriteByte(char)
+				continue
+			}
+
+			varName := ""
+			if i+1 < len(input) && input[i+1] == '{' {
+				// ${VAR_NAME}
+				end := strings.IndexByte(input[i+2:], '}')
+				if end != -1 {
+					varName = input[i+2 : i+2+end]
+					i += end + 2
+				} else {
+					currentToken.WriteByte(char) // End not found, treat as literal
+					continue
+				}
+			} else {
+				// $VAR_NAME
+				j := i + 1
+				for j < len(input) && isAlphaNumeric(input[j]) {
+					j++
+				}
+				varName = input[i+1 : j]
+				i = j - 1
+			}
+
+			if val := os.Getenv(varName); val != "" {
+				currentToken.WriteString(val)
+			}
+
 		default:
 			currentToken.WriteByte(char)
 		}
@@ -120,4 +152,11 @@ func (p *Prompt) parseInput(input string) (types.ParsedPrompt, error) {
 	}
 
 	return parsedPrompt, nil
+}
+
+func isAlphaNumeric(b byte) bool {
+	return (b >= 'a' && b <= 'z') ||
+		(b >= 'A' && b <= 'Z') ||
+		(b >= '0' && b <= '9') ||
+		b == '_'
 }
