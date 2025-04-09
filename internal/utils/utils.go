@@ -152,6 +152,11 @@ func HandleExportLine(line string) {
 	line = strings.Trim(line, " ")
 
 	parts := strings.SplitN(line, "=", 2)
+
+	if len(parts) != 2 {
+		return
+	}
+
 	key := strings.TrimSpace(parts[0])
 	value := strings.Trim(strings.TrimSpace(parts[1]), `"'`)
 

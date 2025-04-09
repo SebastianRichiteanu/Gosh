@@ -19,14 +19,16 @@ func main() {
 }
 
 func run() int {
-	exitChannel := make(chan int, 1)
-	builtinCmds, reloadCfgChannel := builtins.InitBuiltinCmds(exitChannel)
+	reloadCfgChannel := make(chan bool, 1)
 
 	cfg, err := config.NewConfig(reloadCfgChannel)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to initialize config: %v\n", err)
 		return 1
 	}
+
+	exitChannel := make(chan int, 1)
+	builtinCmds := builtins.InitBuiltinCmds(exitChannel, reloadCfgChannel, &cfg.HistoryFile)
 
 	log, err := logger.NewLogger(cfg.LogFile, cfg.LogLevel)
 	if err != nil {

@@ -14,11 +14,11 @@
       Multiple completions
       Partial completions
    - history
-   - ?
+   - env vars
+   - 
 
 ## Nice to Have
 
-- history command
 - support for ctrl+left/right arrow?
 - support for temporary var assignment, eg: var TEST='123' echo $TEST
 - support autocompletion for env vars
@@ -42,3 +42,11 @@ Also happens with "nano", probably something to do with the shell
 
 The number is arbitray, not sure where is it coming from for now
 - DisableRawMode()/EnableRawMode()
+
+### home dir not handled in source
+ source ~/.gosh/goshrc
+
+### autocompletion doesn't work again :((
+
+$ /home/zee|/.gosh/goshrc
+$ if i hit tab with the above prompt, it's bell not autocompletion?

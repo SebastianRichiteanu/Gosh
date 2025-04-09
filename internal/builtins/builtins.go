@@ -13,23 +13,23 @@ import (
 )
 
 const (
-	BuiltinExit   = "exit"
-	BuiltinEcho   = "echo"
-	BuiltinPwd    = "pwd"
-	BuiltinCd     = "cd"
-	BuiltinType   = "type"
-	BuiltinClear  = "clear"
-	BuiltinSource = "source"
-	BuiltinExport = "export"
+	BuiltinExit    = "exit"
+	BuiltinEcho    = "echo"
+	BuiltinPwd     = "pwd"
+	BuiltinCd      = "cd"
+	BuiltinType    = "type"
+	BuiltinClear   = "clear"
+	BuiltinSource  = "source"
+	BuiltinExport  = "export"
+	BuiltinHistory = "history"
 
 	ClearControlSeq = "\033[H\033[2J"
 )
 
 var builtinCmds types.CommandMap = make(types.CommandMap)
-var reloadCfgChannel chan bool = make(chan bool)
 
 // InitBuiltinCmds initializes all built-in commands and stores them in a CommandMap for easy lookup
-func InitBuiltinCmds(exitChannel chan int) (types.CommandMap, chan bool) {
+func InitBuiltinCmds(exitChannel chan int, reloadCfgChannel chan bool, historyFile *string) types.CommandMap {
 	// All fct ret are (string, error) for now at least
 
 	builtinCmds[BuiltinExit] = builtinExit(exitChannel)
@@ -38,10 +38,11 @@ func InitBuiltinCmds(exitChannel chan int) (types.CommandMap, chan bool) {
 	builtinCmds[BuiltinCd] = builtinCd()
 	builtinCmds[BuiltinType] = builtinType()
 	builtinCmds[BuiltinClear] = builtinClear()
-	builtinCmds[BuiltinSource] = builtinSource()
-	builtinCmds[BuiltinExport] = builtinExport()
+	builtinCmds[BuiltinSource] = builtinSource(reloadCfgChannel)
+	builtinCmds[BuiltinExport] = builtinExport(reloadCfgChannel)
+	builtinCmds[BuiltinHistory] = builtinHistory(historyFile)
 
-	return builtinCmds, reloadCfgChannel
+	return builtinCmds
 }
 
 // builtinExit defines the exit behavior of the shell
@@ -131,7 +132,7 @@ func builtinClear() types.Command {
 
 // builtinSource defines the source behavior of the shell
 // It will source a file
-func builtinSource() types.Command {
+func builtinSource(reloadCfgChannel chan bool) types.Command {
 	return func(filePaths ...string) (string, error) {
 		for _, filePath := range filePaths {
 			if err := utils.SourceFile(filePath); err != nil {
@@ -147,7 +148,7 @@ func builtinSource() types.Command {
 	}
 }
 
-func builtinExport() types.Command {
+func builtinExport(reloadCfgChannel chan bool) types.Command {
 	return func(line string) (string, error) {
 		utils.HandleExportLine(line)
 		reloadCfgChannel <- true
@@ -155,5 +156,33 @@ func builtinExport() types.Command {
 		time.Sleep(time.Millisecond) // The update is a bit slow so wait a milisec before returning
 
 		return "", nil
+	}
+}
+
+func builtinHistory(historyFile *string) types.Command {
+	return func(args ...string) (string, error) {
+		if historyFile == nil {
+			return "", fmt.Errorf("history file not set")
+		}
+
+		data, err := os.ReadFile(*historyFile)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return "", nil // no file yet
+			}
+			return "", err
+		}
+
+		var sb strings.Builder
+
+		lines := strings.Split(string(data), "\n")
+		for idx, line := range lines {
+			line = strings.TrimSpace(line)
+			if line != "" {
+				sb.WriteString(fmt.Sprintf("%d  %s\n", idx+1, line))
+			}
+		}
+
+		return sb.String(), nil
 	}
 }
