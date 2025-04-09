@@ -8,7 +8,7 @@ import (
 )
 
 // execBuiltin executes a built-in command and handles its output (stdout, stderr)
-func (e *Executor) execBuiltin(knownCmd types.Command, prompt types.Prompt) {
+func (e *Executor) execBuiltin(knownCmd types.Command, prompt types.ParsedPrompt) {
 	output := e.runBuiltin(knownCmd, prompt)
 
 	if len(output) != 2 {
@@ -27,7 +27,7 @@ func (e *Executor) execBuiltin(knownCmd types.Command, prompt types.Prompt) {
 }
 
 // runBuiltin runs a built-in function dynamically using reflection, passing the arguments from the prompt
-func (e *Executor) runBuiltin(cmd types.Command, prompt types.Prompt) []reflect.Value {
+func (e *Executor) runBuiltin(cmd types.Command, prompt types.ParsedPrompt) []reflect.Value {
 	args := prompt.Tokens[1:]
 
 	fctValue := reflect.ValueOf(cmd)

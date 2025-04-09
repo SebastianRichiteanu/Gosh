@@ -21,7 +21,7 @@ func NewExecutor(builtinCmds *types.CommandMap, cfg *config.Config, logger *logg
 }
 
 // Execute executes the given command based on the parsed prompt
-func (e *Executor) Execute(prompt types.Prompt) {
+func (e *Executor) Execute(prompt types.ParsedPrompt) {
 	if len(prompt.Tokens) == 0 {
 		return
 	}

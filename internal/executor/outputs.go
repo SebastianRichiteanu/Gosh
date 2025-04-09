@@ -27,7 +27,7 @@ func (e *Executor) handleDirectOutput(stdout, stderr reflect.Value) {
 }
 
 // handleFileOutput handles redirecting command output to a file based on the prompt's redirection
-func (e *Executor) handleFileOutput(prompt types.Prompt, stdout, stderr reflect.Value) {
+func (e *Executor) handleFileOutput(prompt types.ParsedPrompt, stdout, stderr reflect.Value) {
 	file, err := utils.OpenFileForStdout(prompt.RedirectFile, prompt.Truncate)
 	if err != nil {
 		fmt.Println(err.Error())

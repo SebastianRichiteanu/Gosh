@@ -52,6 +52,7 @@ func (p *Prompt) readRunes() {
 				p.runeChan <- r2
 				p.runeChan <- r3
 			}
+
 			continue
 		}
 
@@ -67,7 +68,6 @@ func (p *Prompt) readInput(previousInput string) (string, bool) {
 	cursor := len(previousInput)
 	pressedTab := false
 
-	// Ensure historyIndex is valid
 	if p.historyIndex < 0 || p.historyIndex > len(p.history) {
 		p.historyIndex = len(p.history)
 	}

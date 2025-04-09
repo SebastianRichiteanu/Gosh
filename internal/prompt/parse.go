@@ -21,8 +21,8 @@ func (p *Prompt) findTokenIndexAtPosition(tokens []string, position int) int {
 }
 
 // parseInput parses the user input, breaking it into tokens, handling quotes and escape characters, and detecting redirection
-func (p *Prompt) parseInput(input string) (types.Prompt, error) {
-	parsedPrompt := types.Prompt{
+func (p *Prompt) parseInput(input string) (types.ParsedPrompt, error) {
+	parsedPrompt := types.ParsedPrompt{
 		StdStream: types.DefaultStdStream,
 		Truncate:  false,
 	}

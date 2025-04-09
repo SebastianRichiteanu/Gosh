@@ -77,12 +77,12 @@ func (p *Prompt) Close() {
 	close(p.errChan)
 }
 
-func (p *Prompt) HandlePrompt(previousInput string) (types.Prompt, string, error) {
+func (p *Prompt) HandlePrompt(previousInput string) (types.ParsedPrompt, string, error) {
 	fmt.Print(p.cfg.PromptSymbol + " " + previousInput)
 
 	input, skipExec := p.readInput(previousInput)
 	if skipExec {
-		return types.Prompt{}, input, nil
+		return types.ParsedPrompt{}, input, nil
 	}
 
 	prompt, err := p.parseInput(strings.TrimSpace(input))

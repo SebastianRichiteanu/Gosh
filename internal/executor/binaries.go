@@ -12,7 +12,7 @@ import (
 
 // execBinary executes an external command by searching for the binary in the system's PATH
 // and invoking it with the provided arguments
-func (e *Executor) execBinary(prompt types.Prompt) {
+func (e *Executor) execBinary(prompt types.ParsedPrompt) {
 	binary := prompt.Tokens[0]
 	args := prompt.Tokens[1:]
 

@@ -15,8 +15,8 @@ type Command interface{}
 // CommandMap is a map that stores known commands keyed by their name
 type CommandMap map[string]Command
 
-// Prompt is a structure that holds the tokens from user input, stream redirection details, and other command-related information
-type Prompt struct {
+// ParsedPrompt is a structure that holds the tokens from user input, stream redirection details, and other command-related information
+type ParsedPrompt struct {
 	Tokens       []string
 	StdStream    int
 	RedirectFile string
