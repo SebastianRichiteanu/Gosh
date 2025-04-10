@@ -13,12 +13,12 @@ type Config struct {
 	PromptSymbol       string
 	LogLevel           string
 	LogFile            string
+	GoshHomePath       string
+	AliasFile          string
 	HistoryFile        string
 	MaxHistorySize     int
 	EnableAutoComplete bool
-	GoshHomePath       string
-
-	reloadCfgChannel chan bool
+	reloadCfgChannel   chan bool
 }
 
 func NewConfig(reloadCfgChannel chan bool) (*Config, error) {
@@ -30,6 +30,7 @@ func NewConfig(reloadCfgChannel chan bool) (*Config, error) {
 		MaxHistorySize:     defaultMaxHistorySize,
 		EnableAutoComplete: defaultEnableAutoComplete,
 		GoshHomePath:       defaultGoshHomePath,
+		AliasFile:          defaultAliasFile,
 
 		reloadCfgChannel: reloadCfgChannel,
 	}
@@ -100,12 +101,23 @@ func (c *Config) Update() error {
 			return fmt.Errorf("invalid value for MaxHistorySize: %v", err)
 		}
 	}
+
+	if envAliasFile, exists := os.LookupEnv(envVarAliasFile); exists {
+		c.AliasFile = envAliasFile
+	}
+
 	if envAutoComplete, exists := os.LookupEnv(envVarEnableAutoComplete); exists {
 		c.EnableAutoComplete = envAutoComplete == "true"
 	}
 
-	c.LogFile = filepath.Join(c.GoshHomePath, c.LogFile)
-	c.HistoryFile = filepath.Join(c.GoshHomePath, c.HistoryFile)
-
+	if !filepath.IsAbs(c.LogFile) {
+		c.LogFile = filepath.Join(c.GoshHomePath, c.LogFile)
+	}
+	if !filepath.IsAbs(c.HistoryFile) {
+		c.HistoryFile = filepath.Join(c.GoshHomePath, c.HistoryFile)
+	}
+	if !filepath.IsAbs(c.AliasFile) {
+		c.AliasFile = filepath.Join(c.GoshHomePath, c.AliasFile)
+	}
 	return nil
 }

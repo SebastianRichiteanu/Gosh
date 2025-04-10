@@ -38,7 +38,7 @@ func (p *Prompt) appendToHistoryFile(cmd string) error {
 }
 
 func (p *Prompt) rewriteHistoryFile(history []string) error {
-	f, err := os.OpenFile(p.cfg.HistoryFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 644) // TODO: 0o644 ?
+	f, err := os.OpenFile(p.cfg.HistoryFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 644) 
 	if err != nil {
 		return err
 	}

@@ -34,9 +34,13 @@ type Prompt struct {
 
 	history      []string
 	historyIndex int
+
+	aliases *types.Aliases
 }
 
-func NewPrompt(builtinCmds *types.CommandMap, autocompleter *autocompleter.Autocompleter, cfg *config.Config, logger *logger.Logger) (*Prompt, error) {
+func NewPrompt(builtinCmds *types.CommandMap, autocompleter *autocompleter.Autocompleter, aliases *types.Aliases,
+	cfg *config.Config, logger *logger.Logger) (*Prompt, error) {
+
 	p := Prompt{
 		cfg:           cfg,
 		builtinCmds:   builtinCmds,
@@ -49,6 +53,8 @@ func NewPrompt(builtinCmds *types.CommandMap, autocompleter *autocompleter.Autoc
 
 		history:      []string{},
 		historyIndex: -1,
+
+		aliases: aliases,
 	}
 
 	var err error
@@ -64,6 +70,10 @@ func NewPrompt(builtinCmds *types.CommandMap, autocompleter *autocompleter.Autoc
 
 	if err := p.loadHistory(); err != nil {
 		return nil, fmt.Errorf("failed to load history: %v", err)
+	}
+
+	if err := p.loadAliases(); err != nil {
+		return nil, fmt.Errorf("failed to load aliases: %v", err)
 	}
 
 	// listen for input

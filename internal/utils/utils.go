@@ -164,9 +164,14 @@ func HandleExportLine(line string) {
 }
 
 func SourceFile(filePath string) error {
+	filePath, err := ExpandHomePath(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to expand home path: %w", err)
+	}
+
 	file, err := os.Open(filePath)
 	if err != nil {
-		return fmt.Errorf("Failed to open %s: %w", filePath, err)
+		return err
 	}
 	defer file.Close()
 

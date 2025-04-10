@@ -22,3 +22,6 @@ type ParsedPrompt struct {
 	RedirectFile string
 	Truncate     bool
 }
+
+// Aliases is a map that stores aliases for commands, where the key is the alias name and the value is the command it represents
+type Aliases map[string]string

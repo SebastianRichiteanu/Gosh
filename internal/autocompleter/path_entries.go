@@ -27,7 +27,6 @@ func (a *Autocompleter) autoCompletePathEntries(prefix string) []string {
 	if err == nil && info.IsDir() {
 		// If input is a directory and doesn't end with a slash, just return "/"
 		if !strings.HasSuffix(prefix, "/") {
-			// TODO: this should only happen if the pathsuffixes == 1, eg /mnt/d/Programming/C (C | C++)
 			return []string{"/"}
 		}
 

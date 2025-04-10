@@ -36,7 +36,7 @@ func NewCloser(exitChannel chan int, prompt *prompt.Prompt, cfg *config.Config, 
 // Recover catches panics, logs the error and stack trace, and gracefully exits the program
 func (c *Closer) Recover() {
 	if r := recover(); r != nil {
-		fmt.Fprintf(os.Stderr, "caught panic and recovered for gracefully exit: %v\n", r)
+		fmt.Fprintf(os.Stderr, "caught panic and recovered to gracefully exit: %v\n", r)
 		debug.PrintStack()
 		c.HandleExit(1)
 	}

@@ -22,25 +22,30 @@ const (
 	BuiltinSource  = "source"
 	BuiltinExport  = "export"
 	BuiltinHistory = "history"
+	BuiltinAlias   = "alias"
+	BuiltinUnalias = "unalias"
 
 	ClearControlSeq = "\033[H\033[2J"
 )
 
-var builtinCmds types.CommandMap = make(types.CommandMap)
-
 // InitBuiltinCmds initializes all built-in commands and stores them in a CommandMap for easy lookup
-func InitBuiltinCmds(exitChannel chan int, reloadCfgChannel chan bool, historyFile *string) types.CommandMap {
-	// All fct ret are (string, error) for now at least
+func InitBuiltinCmds(exitChannel chan int, reloadCfgChannel chan bool, historyFile *string, aliases *types.Aliases, aliasFile *string) types.CommandMap {
+	builtinCmds := make(types.CommandMap)
 
 	builtinCmds[BuiltinExit] = builtinExit(exitChannel)
 	builtinCmds[BuiltinEcho] = builtinEcho()
 	builtinCmds[BuiltinPwd] = builtinPwd()
 	builtinCmds[BuiltinCd] = builtinCd()
-	builtinCmds[BuiltinType] = builtinType()
+
 	builtinCmds[BuiltinClear] = builtinClear()
 	builtinCmds[BuiltinSource] = builtinSource(reloadCfgChannel)
 	builtinCmds[BuiltinExport] = builtinExport(reloadCfgChannel)
 	builtinCmds[BuiltinHistory] = builtinHistory(historyFile)
+
+	builtinCmds[BuiltinAlias] = builtinAlias(aliases, aliasFile)
+	builtinCmds[BuiltinUnalias] = builtinUnalias(aliases, aliasFile)
+
+	builtinCmds[BuiltinType] = builtinType(builtinCmds)
 
 	return builtinCmds
 }
@@ -107,7 +112,7 @@ func builtinCd() types.Command {
 
 // builtinType defines the type behavior of the shell
 // It prints the type of a given command (either a built-in or external command).
-func builtinType() types.Command {
+func builtinType(builtinCmds types.CommandMap) types.Command {
 	return func(cmd string) (string, error) {
 		if _, isKnownCmd := builtinCmds[cmd]; isKnownCmd || cmd == BuiltinType {
 			return "", fmt.Errorf("%s is a shell builtin", cmd)
@@ -185,4 +190,82 @@ func builtinHistory(historyFile *string) types.Command {
 
 		return sb.String(), nil
 	}
+}
+
+func builtinAlias(aliases *types.Aliases, aliasFile *string) types.Command {
+	return func(args ...string) (string, error) {
+		if aliases == nil || aliasFile == nil {
+			return "", fmt.Errorf("aliases map or alias file is nil")
+		}
+
+		if len(args) == 0 {
+			var result strings.Builder
+			for alias, command := range *aliases {
+				result.WriteString(fmt.Sprintf("alias %s='%s'\n", alias, command))
+			}
+			return result.String(), nil
+		}
+
+		for _, arg := range args {
+			parts := strings.SplitN(arg, "=", 2)
+			if len(parts) != 2 {
+				return "", fmt.Errorf("invalid alias format: %s", arg)
+			}
+
+			alias := parts[0]
+			command := strings.TrimSpace(parts[1])
+
+			// validatre quotes
+			if strings.Count(command, "\"")%2 != 0 || strings.Count(command, "'")%2 != 0 {
+				return "", fmt.Errorf("unterminated quotes in alias command: %s", command)
+			}
+
+			(*aliases)[alias] = command
+		}
+
+		if err := saveAliases(*aliases, *aliasFile); err != nil {
+			return "", fmt.Errorf("failed to save aliases: %v", err)
+		}
+
+		return "", nil
+	}
+}
+
+func builtinUnalias(aliases *types.Aliases, aliasFile *string) types.Command {
+	return func(args ...string) (string, error) {
+		if len(args) == 0 {
+			return "", fmt.Errorf("unalias: missing arguments")
+		}
+
+		if aliases == nil || aliasFile == nil {
+			return "", fmt.Errorf("aliases map or alias file is nil")
+		}
+
+		for _, alias := range args {
+			delete(*aliases, alias)
+		}
+
+		if err := saveAliases(*aliases, *aliasFile); err != nil {
+			return "", fmt.Errorf("failed to save aliases: %v", err)
+		}
+
+		return "", nil
+	}
+}
+
+func saveAliases(aliases types.Aliases, aliasFile string) error {
+	f, err := os.OpenFile(aliasFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	for alias, command := range aliases {
+		_, err := f.WriteString(fmt.Sprintf("%s='%s'\n", alias, command))
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

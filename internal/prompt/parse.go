@@ -31,6 +31,14 @@ func (p *Prompt) parseInput(input string) (types.ParsedPrompt, error) {
 	var currentToken strings.Builder
 	var err error
 
+	tokens := strings.Fields(input)
+	if len(tokens) > 0 && p.aliases != nil {
+		if aliasCommand, exists := (*p.aliases)[tokens[0]]; exists {
+			expandedInput := aliasCommand + " " + strings.Join(tokens[1:], " ")
+			return p.parseInput(expandedInput)
+		}
+	}
+
 	inSingleQuote := false
 	inDoubleQuote := false
 	escaping := false

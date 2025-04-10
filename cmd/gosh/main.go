@@ -11,6 +11,7 @@ import (
 	"github.com/SebastianRichiteanu/Gosh/internal/executor"
 	"github.com/SebastianRichiteanu/Gosh/internal/logger"
 	"github.com/SebastianRichiteanu/Gosh/internal/prompt"
+	"github.com/SebastianRichiteanu/Gosh/internal/types"
 )
 
 func main() {
@@ -20,6 +21,7 @@ func main() {
 
 func run() int {
 	reloadCfgChannel := make(chan bool, 1)
+	aliases := make(types.Aliases)
 
 	cfg, err := config.NewConfig(reloadCfgChannel)
 	if err != nil {
@@ -28,7 +30,8 @@ func run() int {
 	}
 
 	exitChannel := make(chan int, 1)
-	builtinCmds := builtins.InitBuiltinCmds(exitChannel, reloadCfgChannel, &cfg.HistoryFile)
+
+	builtinCmds := builtins.InitBuiltinCmds(exitChannel, reloadCfgChannel, &cfg.HistoryFile, &aliases, &cfg.AliasFile)
 
 	log, err := logger.NewLogger(cfg.LogFile, cfg.LogLevel)
 	if err != nil {
@@ -39,7 +42,7 @@ func run() int {
 	ac := autocompleter.NewAutocompleter(&builtinCmds, cfg, log)
 	exec := executor.NewExecutor(&builtinCmds, cfg, log)
 
-	pr, err := prompt.NewPrompt(&builtinCmds, ac, cfg, log)
+	pr, err := prompt.NewPrompt(&builtinCmds, ac, &aliases, cfg, log)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to initialize prompt: %v\n", err)
 		return 1

@@ -4,7 +4,6 @@
 
 - pipes
 - job control: fg, bg & jobs
-- alias? unalias?
 - tests:
    - autocompletion:
       Builtin completion
@@ -24,6 +23,8 @@
 - support autocompletion for env vars
 - readme
 - color scheme? :D
+- main.go is a bit of a mess
+- what if I only write the history/alias file on exit?
 
 ## Bugs
 
@@ -43,10 +44,20 @@ Also happens with "nano", probably something to do with the shell
 The number is arbitray, not sure where is it coming from for now
 - DisableRawMode()/EnableRawMode()
 
-### home dir not handled in source
- source ~/.gosh/goshrc
-
 ### autocompletion doesn't work again :((
 
 $ /home/zee|/.gosh/goshrc
 $ if i hit tab with the above prompt, it's bell not autocompletion?
+
+### another issue with autocomplete
+
+if the current token is a dir, it will directly add / instead of checking the path for multiplem matches
+
+$ /mnt/d/Programming/C|
+$ /mnt/d/Programming/C/ (after tab)
+$ C C++ (should be)
+
+### Closer not called if init fails
+
+If for example the NewPrompt fct returns an error, the closer will not execute and mess the tty
+

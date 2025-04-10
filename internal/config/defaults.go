@@ -8,8 +8,9 @@ const (
 	defaultGoshHomePath   = "~/.gosh"
 	defaultLogFile        = "gosh.log"
 	defaultHistoryFile    = "history"
-	defaultMaxHistorySize = 10
+	defaultMaxHistorySize = 1000
 	defaultGoshrcFile     = "goshrc"
+	defaultAliasFile      = "aliases"
 )
 
 const (
@@ -20,4 +21,5 @@ const (
 	envVarHistoryFile        = "GOSH_HISTORY_FILE"
 	envVarMaxHistorySize     = "GOSH_MAX_HISTORY_SIZE"
 	envVarGoshHomePath       = "GOSH_CONFIG_HOME"
+	envVarAliasFile          = "GOSH_ALIAS_FILE"
 )
