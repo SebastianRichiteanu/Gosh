@@ -52,6 +52,8 @@ func run() int {
 	defer c.Recover()
 	go c.ListenForSignals()
 
+	log.Info("123")
+
 	return runShellLoop(pr, exec)
 }
 

@@ -1,6 +1,8 @@
 package config
 
 const (
+	defaultConfig = "# Gosh config"
+
 	defaultPromptSymbol       = "$"
 	defaultLogLevel           = "INFO"
 	defaultEnableAutoComplete = true

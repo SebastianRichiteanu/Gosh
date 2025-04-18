@@ -27,7 +27,7 @@ func (p *Prompt) loadHistory() error {
 }
 
 func (p *Prompt) appendToHistoryFile(cmd string) error {
-	f, err := os.OpenFile(p.cfg.HistoryFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 644)
+	f, err := os.OpenFile(p.cfg.HistoryFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
@@ -38,7 +38,7 @@ func (p *Prompt) appendToHistoryFile(cmd string) error {
 }
 
 func (p *Prompt) rewriteHistoryFile(history []string) error {
-	f, err := os.OpenFile(p.cfg.HistoryFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 644) 
+	f, err := os.OpenFile(p.cfg.HistoryFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return err
 	}

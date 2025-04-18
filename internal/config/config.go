@@ -41,6 +41,10 @@ func NewConfig(reloadCfgChannel chan bool) (*Config, error) {
 		return nil, err
 	}
 
+	if err := cfg.EnsureConfig(goshrcExpandedFilePath); err != nil {
+		return nil, fmt.Errorf("failed to ensure config exist: %v", err)
+	}
+
 	if err := utils.SourceFile(goshrcExpandedFilePath); err != nil {
 		return nil, err
 	}
@@ -56,6 +60,28 @@ func NewConfig(reloadCfgChannel chan bool) (*Config, error) {
 
 func (c *Config) Close() {
 	close(c.reloadCfgChannel)
+}
+
+// EnsureConfig makes sure ~/.gosh/goshrc exists, creating it with defaults if needed.
+func (c *Config) EnsureConfig(cfgFile string) error {
+	cfgDir, err := utils.ExpandHomePath(c.GoshHomePath)
+	if err != nil {
+		return fmt.Errorf("could not expand home path: %v", err)
+	}
+
+	if _, err := os.Stat(cfgDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(cfgDir, 0o755); err != nil {
+			return fmt.Errorf("could not create config dir: %w", err)
+		}
+	}
+
+	if _, err := os.Stat(cfgFile); os.IsNotExist(err) {
+		if err := os.WriteFile(cfgFile, []byte(defaultConfig), 0644); err != nil {
+			return fmt.Errorf("could not write default config: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func (c *Config) listenRefreshChan() {
