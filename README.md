@@ -15,7 +15,7 @@ Gosh began as part of the [CodeCrafters](https://codecrafters.io) shell challeng
 - **Aliases** – Define your own short commands via config.
 - **History** – Navigate and recall previously run commands.
 - **Configuration File** – Customize Gosh behavior with a simple config.
-- **Cross-Platform Support** – Runs on Linux, macOS, and Windows.
+- **Cross-Platform Support** – Compatible with any system supported by Go (Linux, macOS, Windows, etc).
 - **Clean Prompt UI** – Simple, readable, and minimalistic prompt.
 - **Logging** – Built-in logger for debugging and development.
 - **Environment Variable Management** – `export`, `$FOO`, etc.
@@ -49,7 +49,7 @@ make build
 ### Run
 
 ```bash
-./gosh
+./bin/gosh
 ```
 
 ---
@@ -65,7 +65,7 @@ $ ls
 
 $ alias gs='git status'
 $ gs > git_status.txt
-# shows git status using alias, outputing the std in the git_status file
+# shows git status using alias, outputing the std in the git_status.txt file
 ```
 
 Autocompletion and history navigation with arrow keys work out of the box.
